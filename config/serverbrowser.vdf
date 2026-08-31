@@ -1,24 +1,4 @@
 "filters"
 {
 	"gamelist"		"friends"
-	"favorites"
-	{
-		"1"
-		{
-			"name"		"37.230.210.218:27015"
-			"address"		"37.230.210.218:27015"
-			"lastplayed"		"1788183158"
-			"appID"		"10"
-		}
-	}
-	"history"
-	{
-		"1"
-		{
-			"name"		"37.230.210.218:27015"
-			"address"		"37.230.210.218:27015"
-			"lastplayed"		"1788185739"
-			"appID"		"10"
-		}
-	}
 }

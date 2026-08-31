@@ -16,38 +16,38 @@ Scheme
 	Colors
 	{
 		// base colors
-		"BaseText"			"224 212 196 255"	// used in text windows, lists
-		"BrightBaseText"	"255 244 230 255"	// brightest text
-		"SelectedText"		"255 244 230 255"	// selected text
-		"DimBaseText"		"178 150 118 255"	// dim base text
-		"LabelDimText"		"178 150 118 255"	// used for info text
-		"ControlText"		"224 212 196 255"	// used in all text controls
-		"BrightControlText"	"255 130 40 255"	// use for selected controls
-		"DisabledText1"		"128 108 90 255"	// disabled text
-		"DisabledText2"		"38 30 22 255"		// overlay color for disabled text (to give that inset look)
-		"DimListText"		"165 128 80 255"	// offline friends, unsubscribed games, etc.
+		"BaseText"			"216 222 211 255"	// used in text windows, lists
+		"BrightBaseText"	"255 255 255 255"	// brightest text
+		"SelectedText"		"255 255 255 255"	// selected text
+		"DimBaseText"		"160 170 149 255"	// dim base text
+		"LabelDimText"		"160 170 149 255"	// used for info text
+		"ControlText"		"216 222 211 255"	// used in all text controls
+		"BrightControlText"	"196 181 80 255"	// use for selected controls
+		"DisabledText1"		"117 128 111 255"	// disabled text
+		"DisabledText2"		"40 46 34 255"		// overlay color for disabled text (to give that inset look)
+		"DimListText"		"117 134 102 255"	// offline friends, unsubscribed games, etc.
 
 		// background colors
-		"ControlBG"			"68 54 42 255"		// background color of controls
-		"ControlDarkBG"		"84 66 50 255"		// darker background color; used for background of scrollbars
-		"WindowBG"			"52 40 30 255"		// background color of text edit panes (chat, text entries, etc.)
-		"SelectionBG"		"189 90 21 255"	// background color of any selected text or menu item
-		"SelectionBG2"		"38 30 22 255"		// selection background in window w/o focus
-		"ListBG"			"52 40 30 255"		// background of server browser, buddy list, etc.
+		"ControlBG"			"76 88 68 255"		// background color of controls
+		"ControlDarkBG"		"90 106 80 255"		// darker background color; used for background of scrollbars
+		"WindowBG"			"62 70 55 255"		// background color of text edit panes (chat, text entries, etc.)
+		"SelectionBG"		"149 136 49 255"	// background color of any selected text or menu item
+		"SelectionBG2"		"40 46 34 255"		// selection background in window w/o focus
+		"ListBG"			"62 70 55 255"		// background of server browser, buddy list, etc.
 
 		// titlebar colors
-		"TitleText"			"255 244 230 255"
-		"TitleDimText"		"178 150 118 255"
-		"TitleBG"			"68 54 42 0"
-		"TitleDimBG"		"68 54 42 0"
-
+		"TitleText"			"255 255 255 255"
+		"TitleDimText"		"136 145 128 255"
+		"TitleBG"			"76 88 68 0"
+		"TitleDimBG"		"76 88 68 0"
+		
 		// slider tick colors
-		"SliderTickColor"	"178 150 118 255"
+		"SliderTickColor"	"127 140 127 255"
 		"SliderTrackColor"	"31 31 31 255"
 
-		// border colors (flat, low-contrast — Material-style outline instead of a 3D bevel)
-		"BorderBright"		"104 82 62 255"	// the lit side of a control
-		"BorderDark"		"104 82 62 255"		// the dark/unlit side of a control
+		// border colors
+		"BorderBright"		"136 145 128 255"	// the lit side of a control
+		"BorderDark"		"40 46 34 255"		// the dark/unlit side of a control
 		"BorderSelection"	"0 0 0 255"			// the additional border color for displaying the default/selected button
 	}
 
@@ -163,9 +163,9 @@ Scheme
 
 		InGameDesktop
 		{
-			"MenuColor"			"210 195 175 255"
-			"ArmedMenuColor"	"255 244 230 255"
-			"DepressedMenuColor" "255 130 40 255"
+			"MenuColor"			"200 200 200 255"
+			"ArmedMenuColor"	"255 255 255 255"
+			"DepressedMenuColor" "192 186 80 255"
 			"WidescreenBarColor" "0 0 0 0"
 			"MenuItemVisibilityRate" "0.03"  // time it takes for one menu item to appear
 			"MenuItemHeight"	"28"
