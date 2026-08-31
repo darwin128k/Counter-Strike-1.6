@@ -21,18 +21,18 @@ Scheme
 	Colors
 	{
 		// base colors
-		"BaseText"			"255 100 13 255"	// used in text windows, lists
-		"BrightBaseText"		"255 100 13 255"	// brightest text
-		"SelectedText"		"255 100 13 255"	// selected text
-		"DimBaseText"		"255 100 13 255"	// dim base text
-		"LabelDimText"		"255 100 13 164"	// used for info text
-		"ControlText"		"255 100 13 255"	// used in all text controls
-		"BrightControlText"	"255 100 13 255"	// use for selected controls
-		"DisabledText1"		"80 31 4 255"	// disabled text
+		"BaseText"			"255 176 0 255"	// used in text windows, lists
+		"BrightBaseText"		"255 176 0 255"	// brightest text
+		"SelectedText"		"255 176 0 255"	// selected text
+		"DimBaseText"		"255 176 0 255"	// dim base text
+		"LabelDimText"		"255 176 0 164"	// used for info text
+		"ControlText"		"255 176 0 255"	// used in all text controls
+		"BrightControlText"	"255 176 0 255"	// use for selected controls
+		"DisabledText1"		"80 48 0 255"	// disabled text
 		"DisabledText2"		"0 0 0 0"		// overlay color for disabled text (to give that inset look)
-		"DimListText"		"188 74 10 255"	// offline friends, unsubscribed games, etc.
+		"DimListText"		"188 112 0 255"	// offline friends, unsubscribed games, etc.
 
-		"ButtonFocusBorder"	"64 25 3 255"	// keyboard focus dashed line for buttons
+		"ButtonFocusBorder"	"64 48 0 255"	// keyboard focus dashed line for buttons
 
 		// background colors
 		"ControlBG"			"0 0 0 0"		// background color of most controls
@@ -40,7 +40,7 @@ Scheme
 		"ControlDarkBG"		"0 0 0 128"		// darker background color; used for background of scrollbars
 		"WindowBG"			"0 0 0 200"		// background color of text edit panes (chat, text entries, etc.)
 		//"SelectionBG"		"192 28 0 140"	// background color of any selected text or menu item
-		"SelectionBG"		"255 100 13 100"	// background color of any selected text or menu item
+		"SelectionBG"		"255 176 0 100"	// background color of any selected text or menu item
 		"SelectionBG2"		"255 255 255 25"		// selection background in window w/o focus
 		"ListBG"			"0 0 0 128"		// background of scoreboard
 		"ViewportBG"		"0 0 0 200"
@@ -51,32 +51,32 @@ Scheme
 		"CreditsNormalFG"	"255 255 255 255"
 		"CreditsNormalBG"	"0 0 0 255"
 
-		"CreditsTitleFG"	"255 100 13 255"
+		"CreditsTitleFG"	"255 174 0 255"
 		"CreditsTitleBG"	"0 0 0 255"
 
-		"CreditsStudioTitleFG"	"255 100 13 255"
+		"CreditsStudioTitleFG"	"255 174 0 255"
 		"CreditsStudioTitleBG"	"0 0 0 255"
 
-		"CreditsIndividualTitleFG"	"255 100 13 255"
+		"CreditsIndividualTitleFG"	"255 174 0 255"
 		"CreditsIndividualTitleBG"	"0 0 0 255"
 		// --------------------------------------------------------
 
 		// titlebar colors
-		"TitleText"			"255 100 13 255"
-		"TitleDimText"		"255 100 13 255"
+		"TitleText"			"255 174 0 255"
+		"TitleDimText"		"255 174 0 255"
 		"TitleBG"			"255 255 0 0"
 		"TitleDimBG"		"255 255 0 0"
-		"TitleIcon"		"255 100 13 255" // big '!' icon in top left
+		"TitleIcon"		"255 174 0 255" // big '!' icon in top left
 		
 		// slider tick colors
 		"SliderTickColor"		"127 140 127 255"
 		"SliderTrackColor"	"31 31 31 255"
 
 		// border colors
-		"BorderBright"		"188 74 10 128"	// the lit side of a control
-		"BorderDark"		"188 74 10 128"	// the dark/unlit side of a control
-		"BorderSelection"		"188 74 10 0"	// the additional border color for displaying the default/selected button
-		"BorderBuyPreset"		"255 100 13 255"	// the lit side of a control
+		"BorderBright"		"188 112 0 128"	// the lit side of a control
+		"BorderDark"		"188 112 0 128"	// the dark/unlit side of a control
+		"BorderSelection"		"188 112 0 0"	// the additional border color for displaying the default/selected button
+		"BorderBuyPreset"		"255 176 0 255"	// the lit side of a control
 
 		"team0"			"204 204 204 255" // Spectators
 		"team1"			"255 64 64 255" // CT's
@@ -89,7 +89,7 @@ Scheme
 		"BuyPresetBG"			"0 0 0 64"
 		"BuyPresetAltBG"		"0 0 0 128"
 
-		"MapDescriptionText"	"255 100 13 255" // the text used in the map description window
+		"MapDescriptionText"	"255 176 0 255" // the text used in the map description window
 	}
 
 	///////////////////// BASE SETTINGS ////////////////////////
