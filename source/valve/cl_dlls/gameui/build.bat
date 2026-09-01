@@ -13,8 +13,8 @@ if not exist build mkdir build
 
 cl /nologo /LD /MT /W3 /O2 ^
     src\main.cpp src\layout.cpp src\log.cpp src\bgswitch.cpp ^
-    /Fo:build\ /Fe:build\GameUI_hook.dll ^
-    /link /OUT:build\GameUI_hook.dll /EXPORT:GameUIHook_Install user32.lib advapi32.lib
+    /Fo:build\ /Fe:build\vellum.dll ^
+    /link /OUT:build\vellum.dll /EXPORT:Vellum_Init user32.lib advapi32.lib
 
 if errorlevel 1 (
     echo Build failed, not deploying.
@@ -38,11 +38,12 @@ if not exist "%STEAM_ORIG%" (
     exit /b 1
 )
 
-copy /Y build\GameUI_hook.dll "%ROOT%GameUI_hook.dll" >nul
+copy /Y build\vellum.dll "%ROOT%vellum.dll" >nul
 if errorlevel 1 (
-    echo Built OK, but could not copy GameUI_hook.dll to game root -- is the game running?
+    echo Built OK, but could not copy vellum.dll to game root -- is the game running?
     exit /b 1
 )
+if exist "%ROOT%GameUI_hook.dll" del /Q "%ROOT%GameUI_hook.dll"
 
 copy /Y "%ORIG_GAMEUI%" "%CL_DLLS%\GameUI.dll" >nul
 if errorlevel 1 (
@@ -50,11 +51,11 @@ if errorlevel 1 (
     exit /b 1
 )
 
-python patch_imports.py "%STEAM_ORIG%" "%STEAM_DST%" --dll GameUI_hook.dll --func GameUIHook_Install
+python patch_imports.py "%STEAM_ORIG%" "%STEAM_DST%" --dll vellum.dll --func Vellum_Init
 if errorlevel 1 (
     echo PE patch of steam_api.dll failed.
     exit /b 1
 )
 
-echo Build OK: original GameUI.dll restored, GameUI_hook.dll next to hl.exe, steam_api.dll imports it.
+echo Build OK: original GameUI.dll restored, vellum.dll next to hl.exe, steam_api.dll imports it.
 endlocal

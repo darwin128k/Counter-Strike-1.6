@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Add a static import to a 32-bit PE DLL so Windows loads our sidecar.
 
-Always reads the pristine original GameUI.dll and writes a patched copy.
+Always reads a pristine original (steam_api.dll) and writes a patched copy.
 Does not modify the original. Strips Authenticode (it would be invalid
 after any PE edit anyway).
 """
@@ -103,7 +103,7 @@ class Pe32(object):
 
 
 def build_ep_stub(stub_rva, orig_ep_rva, iat_rva):
-    """stdcall DllEntry wrapper: call original EP, then GameUIHook_Install.
+    """stdcall DllEntry wrapper: call original EP, then Vellum_Init.
 
     Must run AFTER GameUI's CRT/DllMain so PerformLayout is not hooked while
     GameUI's own constructors are still running.
@@ -265,8 +265,8 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("original")
     parser.add_argument("output")
-    parser.add_argument("--dll", default="GameUI_hook.dll")
-    parser.add_argument("--func", default="GameUIHook_Install")
+    parser.add_argument("--dll", default="vellum.dll")
+    parser.add_argument("--func", default="Vellum_Init")
     parser.add_argument("--wrap-ep", action="store_true",
                         help="Wrap the DLL entry point to call the imported func after DllMain")
     args = parser.parse_args()

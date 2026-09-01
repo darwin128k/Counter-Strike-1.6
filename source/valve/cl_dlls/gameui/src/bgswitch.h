@@ -3,7 +3,7 @@
 
 /* Stashes the game install root (the folder containing cstrike/, valve/,
  * hw.dll, etc -- no trailing slash) for BgSwitch_RunOnceIfNeeded() to use
- * later. Call this early (right after resolving it in GameUIHook_Install);
+ * later. Call this early (right after resolving it in Vellum_Init);
  * it does no file I/O by itself. */
 void BgSwitch_SetGameRoot(const char *gameRootDir);
 

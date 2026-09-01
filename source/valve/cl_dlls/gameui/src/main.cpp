@@ -57,7 +57,7 @@ static void ResolveGameRootFromSelf(HMODULE hSelf)
         }
     }
 
-    HookLog("GameUIHook_Install: gameRoot='%s'", gameRoot);
+    HookLog("Vellum_Init: gameRoot='%s'", gameRoot);
     BgSwitch_SetGameRoot(gameRoot);
     BgSwitch_Reset();
     BgSwitch_RunOnceIfNeeded();
@@ -122,7 +122,7 @@ static void InstallOn(HMODULE hGameUI)
     }
 }
 
-extern "C" __declspec(dllexport) void GameUIHook_Install(void)
+extern "C" __declspec(dllexport) void Vellum_Init(void)
 {
     HMODULE hGameUI = GetModuleHandleA("GameUI.dll");
     if (hGameUI != NULL) {
