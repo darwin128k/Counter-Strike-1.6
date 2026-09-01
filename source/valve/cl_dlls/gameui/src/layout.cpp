@@ -24,6 +24,7 @@ typedef void(__thiscall *SetTextImageIndexFn)(void *item, int newIndex);
 typedef void(__thiscall *GetContentSizeFn)(void *item, int *outWide, int *outTall);
 typedef void(__thiscall *GetPosFn)(void *self, int *outX, int *outY);
 typedef void(__thiscall *PaintBgFn)(void *self);
+typedef void(__thiscall *PerformLayoutFn)(void *self);
 typedef void(__thiscall *IImageSetPosFn)(void *image, int x, int y);
 typedef void(__thiscall *IImageSetSizeFn)(void *image, int wide, int tall);
 typedef void(__thiscall *IImagePaintFn)(void *image);
@@ -42,6 +43,8 @@ static SetBoolFn g_SetFlag42 = NULL;
 static GetSchemeFn g_GetScheme = NULL;
 static PaintBgFn g_origPaintBackground = NULL;
 static BYTE g_paintTrampoline[32];
+static PerformLayoutFn g_origBasePanelLayout = NULL;
+static BYTE g_basePanelLayoutTrampoline[32];
 static volatile LONG g_disabledAfterCrash = 0;
 static volatile LONG g_paintDisabled = 0;
 
@@ -50,6 +53,7 @@ static volatile LONG g_paintDisabled = 0;
 #define MENU_ITEM_BG_DEPRESSED_PATH "gfx/vgui/menu_item_bg_depressed"
 
 static void InstallPaintBackgroundHook(BYTE *base);
+static void InstallBasePanelLayoutHook(BYTE *base);
 
 #define RVA_SETPOS     0x000436f0u
 #define RVA_GETPOS     0x00043720u /* Panel::GetPos(int&,int&); sits between SetPos and SetSize, same two-stack-arg thunk shape */
@@ -63,6 +67,9 @@ static void InstallPaintBackgroundHook(BYTE *base);
 #define RVA_SETFLAG41  0x00046800u /* vtable idx 63, stores 1 byte at this+0x41 -- unconfirmed */
 #define RVA_SETFLAG42  0x00046810u /* vtable idx 64, stores 1 byte at this+0x42 -- unconfirmed */
 #define RVA_GETSCHEME  0x0003f030u /* returns IScheme*-like singleton; confirmed via icon-loading pattern in a Career-mode button ctor */
+#define RVA_BASEPANEL_PERFORMLAYOUT 0x0002bd10u /* CBasePanel vtable slot 111 (vt+0x1BC). Sets this to (0, screenH-64) size (screenW, 64) and lays out GameMenuButton inside that bottom strip. */
+#define BASEPANEL_STRIP_TALL 64
+#define MENU_BELOW_BANNER_Y  (BASEPANEL_STRIP_TALL + 16)
 
 /* vgui2::Label virtuals on CGameMenuItem's own vtable (base 0x1009681c),
  * confirmed by decompiling the item's ApplySchemeSettings (references
@@ -136,6 +143,7 @@ void LayoutHook_Init(HMODULE hOriginalGameUI)
             (void *)base, (void *)g_SetPos, (void *)g_GetPos, (void *)g_SetSize, (void *)g_GetSize, (void *)g_SetBgColor, (void *)g_SetBackgroundTypeCandidate,
             (void *)g_SetFlag40, (void *)g_SetFlag41, (void *)g_SetFlag42, (void *)g_GetScheme);
     InstallPaintBackgroundHook(base);
+    InstallBasePanelLayoutHook(base);
 }
 
 static int ItemIsVisible(void *item)
@@ -452,6 +460,73 @@ static void InstallPaintBackgroundHook(BYTE *base)
             (void *)target, (void *)PaintBackground_Hook, (void *)g_paintTrampoline);
 }
 
+static void __fastcall BasePanelLayout_Hook(void *thisPtr)
+{
+    if (g_origBasePanelLayout != NULL) {
+        g_origBasePanelLayout(thisPtr);
+    }
+    /* Stock layout parks this 64px strip at (0, screenH-64) with the CS
+     * logo button inside it. Move the whole strip to the top of the screen
+     * so the inscription sits above the menu instead of under it. The
+     * helper at the end of the original function also shoves GameMenu to
+     * the bottom -- pull it back under the strip if this object owns it. */
+    __try {
+        void *menu;
+        if (g_SetPos != NULL) {
+            g_SetPos(thisPtr, 0, 0);
+        }
+        menu = *(void **)((char *)thisPtr + 0xB4);
+        if (menu != NULL && IsMainMenuPanel(menu) && g_SetPos != NULL) {
+            g_SetPos(menu, 0, MENU_BELOW_BANNER_Y);
+        }
+        menu = *(void **)((char *)thisPtr + 0xB0);
+        if (menu != NULL && IsMainMenuPanel(menu) && g_SetPos != NULL) {
+            g_SetPos(menu, 0, MENU_BELOW_BANNER_Y);
+        }
+    } __except (EXCEPTION_EXECUTE_HANDLER) {
+    }
+}
+
+static void InstallBasePanelLayoutHook(BYTE *base)
+{
+    static const BYTE kExpectedPrologue[6] = { 0x83, 0xEC, 0x08, 0x56, 0x8B, 0xF1 };
+    BYTE *target = base + RVA_BASEPANEL_PERFORMLAYOUT;
+    DWORD oldProtect;
+    INT32 relBack;
+    INT32 relHook;
+    DWORD trampProtect;
+
+    if (memcmp(target, kExpectedPrologue, PAINTBG_STOLEN) != 0) {
+        HookLog("InstallBasePanelLayoutHook: prologue mismatch at %p, skip", (void *)target);
+        return;
+    }
+
+    memcpy(g_basePanelLayoutTrampoline, target, PAINTBG_STOLEN);
+    g_basePanelLayoutTrampoline[PAINTBG_STOLEN] = 0xE9;
+    relBack = (INT32)((target + PAINTBG_STOLEN) - (g_basePanelLayoutTrampoline + PAINTBG_STOLEN + 5));
+    memcpy(g_basePanelLayoutTrampoline + PAINTBG_STOLEN + 1, &relBack, sizeof(relBack));
+
+    if (!VirtualProtect(g_basePanelLayoutTrampoline, sizeof(g_basePanelLayoutTrampoline), PAGE_EXECUTE_READWRITE, &trampProtect)) {
+        return;
+    }
+    g_origBasePanelLayout = (PerformLayoutFn)(void *)g_basePanelLayoutTrampoline;
+
+    if (!VirtualProtect(target, PAINTBG_STOLEN, PAGE_EXECUTE_READWRITE, &oldProtect)) {
+        return;
+    }
+
+    relHook = (INT32)((BYTE *)BasePanelLayout_Hook - (target + 5));
+    target[0] = 0xE9;
+    memcpy(target + 1, &relHook, sizeof(relHook));
+    target[5] = 0x90;
+
+    VirtualProtect(target, PAINTBG_STOLEN, oldProtect, &oldProtect);
+    FlushInstructionCache(GetCurrentProcess(), target, PAINTBG_STOLEN);
+    FlushInstructionCache(GetCurrentProcess(), g_basePanelLayoutTrampoline, sizeof(g_basePanelLayoutTrampoline));
+    HookLog("InstallBasePanelLayoutHook: hooked %p -> %p",
+            (void *)target, (void *)BasePanelLayout_Hook);
+}
+
 static void LayoutHook_Inner(void *thisPtr)
 {
     HookLog("LayoutHook_ReplacementEntry: ENTER thisPtr=%p", thisPtr);
@@ -644,8 +719,7 @@ static void LayoutHook_Inner(void *thisPtr)
      * the list higher -- local child coordinates below 0 just get clipped
      * by this same panel, so that's a dead end. */
     HookLog("LayoutHook_ReplacementEntry: calling panel SetPos");
-    g_SetPos(thisPtr, 0, 40);
-    HookLog("LayoutHook_ReplacementEntry: panel SetPos returned");
+    g_SetPos(thisPtr, 0, MENU_BELOW_BANNER_Y);
 
     /* Per-row plate is drawn in Menu::PaintBackground from
      * gfx/vgui/menu_item_bg (TGA next to the icons). */
