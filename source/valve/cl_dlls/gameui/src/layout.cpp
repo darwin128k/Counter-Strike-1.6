@@ -27,6 +27,8 @@ typedef void(__thiscall *PaintBgFn)(void *self);
 typedef void(__thiscall *IImageSetPosFn)(void *image, int x, int y);
 typedef void(__thiscall *IImageSetSizeFn)(void *image, int wide, int tall);
 typedef void(__thiscall *IImagePaintFn)(void *image);
+typedef char(__thiscall *IsArmedFn)(void *item);
+typedef void(__thiscall *SetTwoColorsFn)(void *item, unsigned int packedFg, unsigned int packedBg);
 
 static SetPosFn g_SetPos = NULL;
 static SetSizeFn g_SetSize = NULL;
@@ -44,6 +46,7 @@ static volatile LONG g_disabledAfterCrash = 0;
 static volatile LONG g_paintDisabled = 0;
 
 #define MENU_ITEM_BG_PATH "gfx/vgui/menu_item_bg"
+#define MENU_ITEM_BG_ARMED_PATH "gfx/vgui/menu_item_bg_armed"
 
 static void InstallPaintBackgroundHook(BYTE *base);
 
@@ -76,6 +79,11 @@ static void InstallPaintBackgroundHook(BYTE *base);
                                                      * slot on each item with two int* out-params and takes the max
                                                      * (+8 padding) -- the real engine's own localization-aware content
                                                      * measurement, not something we're inventing. */
+#define ITEM_VTABLE_ISARMED_OFFSET           0x2a4 /* Button::IsArmed -- `mov al,[ecx+0xC2]; ret`. The setter immediately
+                                                     * before it (vt+0x2a0, RVA 0x3f930) is SetArmed: it writes this+0xC2
+                                                     * then plays the word-at-this+0x100 armed sound if the name isn't -1. */
+#define ITEM_VTABLE_SETDEFAULTCOLOR_OFFSET   0x2ec /* Button::SetDefaultColor(Color fg, Color bg) -- two dwords, stores +0xE4/+0xE8 */
+#define ITEM_VTABLE_SETARMEDCOLOR_OFFSET     0x2f0 /* Button::SetArmedColor(Color fg, Color bg) -- same shape, stores +0xEC/+0xF0 */
 
 /* field offsets in DWORDs from 'this', read off the decompiled
  * FUN_1006afb0 body */
@@ -185,6 +193,57 @@ static void AttachIcon(void *item, const char *iconPath)
     HookLog("  AttachIcon: SetImageAtIndex done");
 }
 
+/* Valve Color is four bytes [r,g,b,a] in little-endian, so white is
+ * 0xFFFFFFFF and fully-transparent black is 0. Passing a transparent
+ * background stops MenuItem::PaintBackground from covering our plate. */
+#define COLOR_WHITE_OPAQUE 0xFFFFFFFFu
+#define COLOR_TRANSPARENT  0x00000000u
+
+static void ClearStockItemFill(void *item)
+{
+    void **vtable;
+    SetTwoColorsFn setDefaultColor;
+    SetTwoColorsFn setArmedColor;
+    if (item == NULL) {
+        return;
+    }
+    vtable = *(void ***)item;
+    setDefaultColor = (SetTwoColorsFn)vtable[ITEM_VTABLE_SETDEFAULTCOLOR_OFFSET / sizeof(void *)];
+    setArmedColor = (SetTwoColorsFn)vtable[ITEM_VTABLE_SETARMEDCOLOR_OFFSET / sizeof(void *)];
+    setDefaultColor(item, COLOR_WHITE_OPAQUE, COLOR_TRANSPARENT);
+    setArmedColor(item, COLOR_WHITE_OPAQUE, COLOR_TRANSPARENT);
+}
+
+static int ItemIsArmedQuiet(void *item)
+{
+    void **vtable;
+    IsArmedFn fn;
+    if (item == NULL) {
+        return 0;
+    }
+    vtable = *(void ***)item;
+    fn = (IsArmedFn)vtable[ITEM_VTABLE_ISARMED_OFFSET / sizeof(void *)];
+    return fn(item) != 0;
+}
+
+static void PaintOneImage(void *image, int x, int y, int w, int h)
+{
+    void **imageVtable;
+    IImageSetPosFn setPos;
+    IImageSetSizeFn setSize;
+    IImagePaintFn paint;
+    if (image == NULL || w <= 0 || h <= 0) {
+        return;
+    }
+    imageVtable = *(void ***)image;
+    paint = (IImagePaintFn)imageVtable[0];
+    setPos = (IImageSetPosFn)imageVtable[1];
+    setSize = (IImageSetSizeFn)imageVtable[4];
+    setPos(image, x, y);
+    setSize(image, w, h);
+    paint(image);
+}
+
 static int ItemIsVisibleQuiet(void *item)
 {
     void **vtable;
@@ -236,11 +295,8 @@ static void DrawItemBackdrops(void *thisPtr)
     void *scheme;
     void **schemeVtable;
     SchemeGetImageFn getImage;
-    void *image;
-    void **imageVtable;
-    IImageSetPosFn setPos;
-    IImageSetSizeFn setSize;
-    IImagePaintFn paint;
+    void *imageIdle;
+    void *imageArmed;
     void *visibleItems[64];
     int visibleCount;
     int i;
@@ -256,27 +312,23 @@ static void DrawItemBackdrops(void *thisPtr)
 
     schemeVtable = *(void ***)scheme;
     getImage = (SchemeGetImageFn)schemeVtable[ITEM_VTABLE_SCHEME_GETIMAGE_OFFSET / sizeof(void *)];
-    image = getImage(scheme, MENU_ITEM_BG_PATH, 1);
-    if (image == NULL) {
+    imageIdle = getImage(scheme, MENU_ITEM_BG_PATH, 1);
+    imageArmed = getImage(scheme, MENU_ITEM_BG_ARMED_PATH, 1);
+    if (imageIdle == NULL) {
         return;
     }
-
-    imageVtable = *(void ***)image;
-    paint = (IImagePaintFn)imageVtable[0];
-    setPos = (IImageSetPosFn)imageVtable[1];
-    setSize = (IImageSetSizeFn)imageVtable[4];
+    if (imageArmed == NULL) {
+        imageArmed = imageIdle;
+    }
 
     visibleCount = CollectVisibleItems(thisPtr, visibleItems, 64);
     for (i = 0; i < visibleCount; i++) {
         int x = 0, y = 0, w = 0, h = 0;
+        void *plate;
         g_GetPos(visibleItems[i], &x, &y);
         g_GetSize(visibleItems[i], &w, &h);
-        if (w <= 0 || h <= 0) {
-            continue;
-        }
-        setPos(image, x, y);
-        setSize(image, w, h);
-        paint(image);
+        plate = ItemIsArmedQuiet(visibleItems[i]) ? imageArmed : imageIdle;
+        PaintOneImage(plate, x, y, w, h);
     }
 }
 
@@ -512,6 +564,10 @@ static void LayoutHook_Inner(void *thisPtr)
             HookLog("LayoutHook_ReplacementEntry: v=%d attaching icon %s", v, kMainMenuIcons[v]);
             AttachIcon(visibleItems[v], kMainMenuIcons[v]);
         }
+    }
+
+    for (v = 0; v < visibleCount; v++) {
+        ClearStockItemFill(visibleItems[v]);
     }
 
     /* Measure the real, localization-aware content width/height of each
