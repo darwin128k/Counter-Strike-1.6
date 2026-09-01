@@ -7,6 +7,9 @@
  * it does no file I/O by itself. */
 void BgSwitch_SetGameRoot(const char *gameRootDir);
 
+/* Folder containing cstrike/ and valve/, or NULL if not set yet. */
+const char *BgSwitch_GetGameRoot(void);
+
 /* Allows BgSwitch_RunOnceIfNeeded to run again (video-mode relaunch
  * loads a fresh GameUI in the same process; the new resolution needs a
  * new background pick). */

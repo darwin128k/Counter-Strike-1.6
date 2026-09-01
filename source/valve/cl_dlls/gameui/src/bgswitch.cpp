@@ -160,6 +160,11 @@ void BgSwitch_SetGameRoot(const char *gameRootDir)
     g_gameRootSet = 1;
 }
 
+const char *BgSwitch_GetGameRoot(void)
+{
+    return g_gameRootSet ? g_gameRoot : NULL;
+}
+
 void BgSwitch_Reset(void)
 {
     g_ranOnce = 0;

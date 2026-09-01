@@ -68,8 +68,14 @@ static void InstallBasePanelLayoutHook(BYTE *base);
 #define RVA_SETFLAG42  0x00046810u /* vtable idx 64, stores 1 byte at this+0x42 -- unconfirmed */
 #define RVA_GETSCHEME  0x0003f030u /* returns IScheme*-like singleton; confirmed via icon-loading pattern in a Career-mode button ctor */
 #define RVA_BASEPANEL_PERFORMLAYOUT 0x0002bd10u /* CBasePanel vtable slot 111 (vt+0x1BC). Sets this to (0, screenH-64) size (screenW, 64) and lays out GameMenuButton inside that bottom strip. */
-#define BASEPANEL_STRIP_TALL 64
-#define MENU_BELOW_BANNER_Y  (BASEPANEL_STRIP_TALL + 16)
+#define BANNER_Y 24 /* extra top inset so the CS logo isn't flush with the title bar */
+#define LOGO_MENU_GAP 16
+#define OFF_GAMEMENU_BUTTON   0xA8 /* CGameMenuButton*; stock PerformLayout SetPos/SetSize this */
+#define OFF_GAMEMENU_BUTTON2  0xAC /* sibling the same function also SetSize to the hardcoded 240 */
+#define LOGO_IMAGE_PATH "resource/game_menu"
+#define LOGO_IMAGE_ARMED_PATH "resource/game_menu_mouseover"
+#define IIMAGE_VTABLE_SETSIZE 4
+#define FALLBACK_LOGO_TALL 64
 
 /* vgui2::Label virtuals on CGameMenuItem's own vtable (base 0x1009681c),
  * confirmed by decompiling the item's ApplySchemeSettings (references
@@ -332,6 +338,131 @@ static int IsMainMenuPanel(void *thisPtr)
     return panelName != NULL && strcmp(panelName, MAIN_MENU_PANEL_NAME) == 0;
 }
 
+static int ReadLogoTgaSize(int *outWide, int *outTall)
+{
+    static int cachedW = 0;
+    static int cachedH = 0;
+    const char *root;
+    char path[MAX_PATH];
+    HANDLE file;
+    BYTE header[18];
+    DWORD nread;
+    unsigned wide;
+    unsigned tall;
+
+    if (cachedW > 0 && cachedH > 0) {
+        *outWide = cachedW;
+        *outTall = cachedH;
+        return 1;
+    }
+
+    root = BgSwitch_GetGameRoot();
+    if (root == NULL || root[0] == '\0') {
+        return 0;
+    }
+
+    wsprintfA(path, "%s\\cstrike\\resource\\game_menu.tga", root);
+    file = CreateFileA(path, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+    if (file == INVALID_HANDLE_VALUE) {
+        wsprintfA(path, "%s\\valve\\resource\\game_menu.tga", root);
+        file = CreateFileA(path, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+    }
+    if (file == INVALID_HANDLE_VALUE) {
+        return 0;
+    }
+    if (!ReadFile(file, header, 18, &nread, NULL) || nread < 18) {
+        CloseHandle(file);
+        return 0;
+    }
+    CloseHandle(file);
+
+    wide = (unsigned)header[12] | ((unsigned)header[13] << 8);
+    tall = (unsigned)header[14] | ((unsigned)header[15] << 8);
+    if (wide == 0 || tall == 0 || wide > 2048 || tall > 1024) {
+        return 0;
+    }
+
+    cachedW = (int)wide;
+    cachedH = (int)tall;
+    *outWide = cachedW;
+    *outTall = cachedH;
+    HookLog("ReadLogoTgaSize: %dx%d from %s", cachedW, cachedH, path);
+    return 1;
+}
+
+static int MenuBelowBannerY(void)
+{
+    int wide = 0;
+    int tall = 0;
+    if (ReadLogoTgaSize(&wide, &tall) && tall > 0) {
+        return BANNER_Y + tall + LOGO_MENU_GAP;
+    }
+    return BANNER_Y + FALLBACK_LOGO_TALL + LOGO_MENU_GAP;
+}
+
+static void ForceImageDrawSize(void *image, int wide, int tall)
+{
+    void **vtable;
+    IImageSetSizeFn setSize;
+    if (image == NULL || wide <= 0 || tall <= 0) {
+        return;
+    }
+    vtable = *(void ***)image;
+    setSize = (IImageSetSizeFn)vtable[IIMAGE_VTABLE_SETSIZE];
+    setSize(image, wide, tall);
+}
+
+static void ForceSchemeLogoSize(const char *path, int wide, int tall)
+{
+    void *scheme;
+    void **schemeVtable;
+    SchemeGetImageFn getImage;
+    void *image;
+    if (g_GetScheme == NULL) {
+        return;
+    }
+    scheme = g_GetScheme();
+    if (scheme == NULL) {
+        return;
+    }
+    schemeVtable = *(void ***)scheme;
+    getImage = (SchemeGetImageFn)schemeVtable[ITEM_VTABLE_SCHEME_GETIMAGE_OFFSET / sizeof(void *)];
+    image = getImage(scheme, path, 0);
+    if (image == NULL) {
+        image = getImage(scheme, path, 1);
+    }
+    ForceImageDrawSize(image, wide, tall);
+}
+
+static void SizeLogoButton(void *basePanel, int logoWide, int logoTall)
+{
+    void *button;
+    if (g_SetSize == NULL || logoWide <= 0 || logoTall <= 0) {
+        return;
+    }
+
+    ForceSchemeLogoSize(LOGO_IMAGE_PATH, logoWide, logoTall);
+    ForceSchemeLogoSize(LOGO_IMAGE_ARMED_PATH, logoWide, logoTall);
+
+    /* Stock CBasePanel::PerformLayout SetSize's these two to a hardcoded
+     * 240x (push 0xF0) -- that was enough for the old 207px inscription
+     * and clips anything wider. Override from the TGA header. */
+    button = *(void **)((char *)basePanel + OFF_GAMEMENU_BUTTON);
+    if (button != NULL) {
+        if (g_SetPos != NULL) {
+            g_SetPos(button, 0, 0);
+        }
+        g_SetSize(button, logoWide, logoTall);
+    }
+    button = *(void **)((char *)basePanel + OFF_GAMEMENU_BUTTON2);
+    if (button != NULL && !IsMainMenuPanel(button)) {
+        if (g_SetPos != NULL) {
+            g_SetPos(button, 0, 0);
+        }
+        g_SetSize(button, logoWide, logoTall);
+    }
+}
+
 static void DrawItemBackdrops(void *thisPtr)
 {
     void *scheme;
@@ -466,22 +597,48 @@ static void __fastcall BasePanelLayout_Hook(void *thisPtr)
         g_origBasePanelLayout(thisPtr);
     }
     /* Stock layout parks this 64px strip at (0, screenH-64) with the CS
-     * logo button inside it. Move the whole strip to the top of the screen
-     * so the inscription sits above the menu instead of under it. The
-     * helper at the end of the original function also shoves GameMenu to
-     * the bottom -- pull it back under the strip if this object owns it. */
+     * logo button inside it, and hardcodes the button to 240px wide.
+     * Move the strip near the top, then size the button from the TGA so
+     * a wider inscription isn't clipped. BANNER_Y keeps a little air
+     * under the title bar. The helper at the end of the original function
+     * also shoves GameMenu to the bottom -- pull it back under the strip
+     * if this object owns it. */
     __try {
         void *menu;
-        if (g_SetPos != NULL) {
-            g_SetPos(thisPtr, 0, 0);
+        int wide = 0, tall = 0;
+        int logoW = 0, logoH = 0;
+        int stripTall;
+        int menuY;
+
+        if (!ReadLogoTgaSize(&logoW, &logoH) || logoH <= 0) {
+            logoH = FALLBACK_LOGO_TALL;
         }
+        stripTall = logoH;
+        menuY = BANNER_Y + stripTall + LOGO_MENU_GAP;
+
+        if (g_SetPos != NULL) {
+            g_SetPos(thisPtr, 0, BANNER_Y);
+        }
+        if (g_SetSize != NULL) {
+            if (g_GetSize != NULL) {
+                g_GetSize(thisPtr, &wide, &tall);
+            }
+            if (wide <= 0) {
+                wide = 640;
+            }
+            if (wide < logoW) {
+                wide = logoW;
+            }
+            g_SetSize(thisPtr, wide, stripTall);
+        }
+        SizeLogoButton(thisPtr, logoW, logoH);
         menu = *(void **)((char *)thisPtr + 0xB4);
         if (menu != NULL && IsMainMenuPanel(menu) && g_SetPos != NULL) {
-            g_SetPos(menu, 0, MENU_BELOW_BANNER_Y);
+            g_SetPos(menu, 0, menuY);
         }
         menu = *(void **)((char *)thisPtr + 0xB0);
         if (menu != NULL && IsMainMenuPanel(menu) && g_SetPos != NULL) {
-            g_SetPos(menu, 0, MENU_BELOW_BANNER_Y);
+            g_SetPos(menu, 0, menuY);
         }
     } __except (EXCEPTION_EXECUTE_HANDLER) {
     }
@@ -719,7 +876,7 @@ static void LayoutHook_Inner(void *thisPtr)
      * the list higher -- local child coordinates below 0 just get clipped
      * by this same panel, so that's a dead end. */
     HookLog("LayoutHook_ReplacementEntry: calling panel SetPos");
-    g_SetPos(thisPtr, 0, MENU_BELOW_BANNER_Y);
+    g_SetPos(thisPtr, 0, MenuBelowBannerY());
 
     /* Per-row plate is drawn in Menu::PaintBackground from
      * gfx/vgui/menu_item_bg (TGA next to the icons). */
