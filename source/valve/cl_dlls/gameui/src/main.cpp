@@ -4,78 +4,49 @@
 #include "log.h"
 #include "bgswitch.h"
 
-/* This DLL is meant to replace valve/cl_dlls/GameUI.dll after the real
- * file has been renamed to GameUI_orig.dll in the same folder. We load the
- * renamed original ourselves, patch one internal function in its memory
- * image (the menu layout routine), and transparently forward the single
- * real export (CreateInterface) so the engine notices nothing else. */
-
-typedef void *(*CreateInterfaceFn)(const char *pName, int *pReturnCode);
-
-static HMODULE g_hOriginal = NULL;
-static CreateInterfaceFn g_pOriginalCreateInterface = NULL;
+/* Sidecar DLL. It is NOT a GameUI.dll replacement -- the original
+ * valve/cl_dlls/GameUI.dll stays byte-identical on disk.
+ *
+ * Loaded as a static import of steam_api.dll (already a non-Valve
+ * RevEmu binary sitting next to hl.exe). A watcher thread keeps an eye
+ * on GameUI.dll for the life of the process: GoldSrc's video-mode
+ * change unloads and reloads GameUI (same process or a fresh one), and
+ * a one-shot hook would leave the second instance vanilla. */
 
 #define HOOK_TARGET_RVA 0x0006afb0u
 #define HOOK_STUB_SIZE  5u /* E9 rel32 */
 
-static void InstallLayoutHook(HMODULE hOriginal)
+static HMODULE g_hookedModule = NULL;
+
+static int PathEndsWith(const char *path, const char *suffix)
 {
-    BYTE *target = (BYTE *)hOriginal + HOOK_TARGET_RVA;
-    DWORD oldProtect;
-
-    HookLog("InstallLayoutHook: hOriginal=%p target=%p", (void *)hOriginal, (void *)target);
-
-    if (!VirtualProtect(target, HOOK_STUB_SIZE, PAGE_EXECUTE_READWRITE, &oldProtect)) {
-        HookLog("InstallLayoutHook: VirtualProtect FAILED, GetLastError=%lu", GetLastError());
-        return;
+    size_t pathLen = strlen(path);
+    size_t suffixLen = strlen(suffix);
+    if (pathLen < suffixLen) {
+        return 0;
     }
-
-    LayoutHook_Init(hOriginal);
-    HookLog("InstallLayoutHook: LayoutHook_Init done");
-
-    INT_PTR rel = (INT_PTR)LayoutHook_ReplacementEntry - (INT_PTR)(target + HOOK_STUB_SIZE);
-    HookLog("InstallLayoutHook: ReplacementEntry=%p rel=%ld", (void *)LayoutHook_ReplacementEntry, (long)rel);
-
-    target[0] = 0xE9;
-    *(INT_PTR *)(target + 1) = rel;
-
-    VirtualProtect(target, HOOK_STUB_SIZE, oldProtect, &oldProtect);
-    FlushInstructionCache(GetCurrentProcess(), target, HOOK_STUB_SIZE);
-    HookLog("InstallLayoutHook: patch written and flushed");
+    return lstrcmpiA(path + pathLen - suffixLen, suffix) == 0;
 }
 
-static void LoadOriginalAndHook(void)
+static void ResolveGameRootFromSelf(HMODULE hSelf)
 {
     char selfPath[MAX_PATH];
-    char origPath[MAX_PATH];
-    HMODULE hSelf = NULL;
-    char *slash;
+    char gameRoot[MAX_PATH];
+    char *s;
 
-    GetModuleHandleExA(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS,
-                        (LPCSTR)&LoadOriginalAndHook, &hSelf);
     GetModuleFileNameA(hSelf, selfPath, MAX_PATH);
-
-    slash = strrchr(selfPath, '\\');
-    if (slash != NULL) {
-        *(slash + 1) = '\0';
+    s = strrchr(selfPath, '\\');
+    if (s != NULL) {
+        *s = '\0';
     } else {
         selfPath[0] = '\0';
     }
 
-    wsprintfA(origPath, "%sGameUI_orig.dll", selfPath);
-    HookLog("LoadOriginalAndHook: loading '%s'", origPath);
+    lstrcpynA(gameRoot, selfPath, MAX_PATH);
 
-    /* selfPath is ".../valve/cl_dlls/" -- strip those two path components
-     * to get the game install root, which is what BgSwitch needs to find
-     * cstrike/resource/BackgroundLayout.txt. */
-    {
-        char gameRoot[MAX_PATH];
-        char *s;
-        strcpy(gameRoot, selfPath);
-        size_t len = strlen(gameRoot);
-        if (len > 0 && gameRoot[len - 1] == '\\') {
-            gameRoot[len - 1] = '\0';
-        }
+    /* Next to hl.exe already is the game root. If we were still being
+     * loaded from valve/cl_dlls or cstrike/cl_dlls, climb two levels. */
+    if (PathEndsWith(gameRoot, "\\cl_dlls") || PathEndsWith(gameRoot, "/cl_dlls")) {
         s = strrchr(gameRoot, '\\');
         if (s != NULL) {
             *s = '\0';
@@ -84,30 +55,99 @@ static void LoadOriginalAndHook(void)
         if (s != NULL) {
             *s = '\0';
         }
-        HookLog("LoadOriginalAndHook: gameRoot='%s'", gameRoot);
-        BgSwitch_SetGameRoot(gameRoot);
-
-        /* Do this NOW, before LoadLibraryA below hands control back to the
-         * engine to go on and load the background art -- registry values
-         * (unlike GetSystemMetrics) are already correct this early, so
-         * there's no reason to wait for the menu layout hook to fire.
-         * Waiting caused a one-launch lag: the engine would load the
-         * background from whatever the file said BEFORE our rewrite,
-         * and only the NEXT restart would show the corrected pick. */
-        BgSwitch_RunOnceIfNeeded();
     }
 
-    g_hOriginal = LoadLibraryA(origPath);
-    if (g_hOriginal == NULL) {
-        HookLog("LoadOriginalAndHook: LoadLibraryA FAILED, GetLastError=%lu", GetLastError());
-        return;
+    HookLog("GameUIHook_Install: gameRoot='%s'", gameRoot);
+    BgSwitch_SetGameRoot(gameRoot);
+    BgSwitch_Reset();
+    BgSwitch_RunOnceIfNeeded();
+}
+
+static int HookBytesPointAtUs(HMODULE hGameUI)
+{
+    BYTE *target = (BYTE *)hGameUI + HOOK_TARGET_RVA;
+    INT32 rel;
+    BYTE *dest;
+
+    __try {
+        if (target[0] != 0xE9) {
+            return 0;
+        }
+        rel = *(INT32 *)(target + 1);
+        dest = target + HOOK_STUB_SIZE + rel;
+    } __except (EXCEPTION_EXECUTE_HANDLER) {
+        return 0;
     }
-    HookLog("LoadOriginalAndHook: loaded at base=%p", (void *)g_hOriginal);
+    return dest == (BYTE *)LayoutHook_ReplacementEntry;
+}
 
-    g_pOriginalCreateInterface = (CreateInterfaceFn)GetProcAddress(g_hOriginal, "CreateInterface");
-    HookLog("LoadOriginalAndHook: original CreateInterface=%p", (void *)g_pOriginalCreateInterface);
+static int InstallLayoutHook(HMODULE hGameUI)
+{
+    BYTE *target = (BYTE *)hGameUI + HOOK_TARGET_RVA;
+    DWORD oldProtect;
+    INT_PTR rel;
 
-    InstallLayoutHook(g_hOriginal);
+    HookLog("InstallLayoutHook: hGameUI=%p target=%p", (void *)hGameUI, (void *)target);
+
+    if (!VirtualProtect(target, HOOK_STUB_SIZE, PAGE_EXECUTE_READWRITE, &oldProtect)) {
+        HookLog("InstallLayoutHook: VirtualProtect FAILED, GetLastError=%lu", GetLastError());
+        return 0;
+    }
+
+    LayoutHook_Init(hGameUI);
+
+    rel = (INT_PTR)LayoutHook_ReplacementEntry - (INT_PTR)(target + HOOK_STUB_SIZE);
+    target[0] = 0xE9;
+    *(INT32 *)(target + 1) = (INT32)rel;
+
+    VirtualProtect(target, HOOK_STUB_SIZE, oldProtect, &oldProtect);
+    FlushInstructionCache(GetCurrentProcess(), target, HOOK_STUB_SIZE);
+    HookLog("InstallLayoutHook: patch written, ReplacementEntry=%p rel=%ld",
+            (void *)LayoutHook_ReplacementEntry, (long)rel);
+    return 1;
+}
+
+static void InstallOn(HMODULE hGameUI)
+{
+    HMODULE hSelf = NULL;
+
+    GetModuleHandleExA(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS,
+                       (LPCSTR)&InstallOn, &hSelf);
+    if (hSelf != NULL) {
+        ResolveGameRootFromSelf(hSelf);
+    }
+
+    if (InstallLayoutHook(hGameUI)) {
+        g_hookedModule = hGameUI;
+    }
+}
+
+extern "C" __declspec(dllexport) void GameUIHook_Install(void)
+{
+    HMODULE hGameUI = GetModuleHandleA("GameUI.dll");
+    if (hGameUI != NULL) {
+        InstallOn(hGameUI);
+    }
+}
+
+static DWORD WINAPI WatchGameUI(LPVOID unused)
+{
+    (void)unused;
+    for (;;) {
+        HMODULE h = GetModuleHandleA("GameUI.dll");
+        if (h == NULL) {
+            g_hookedModule = NULL;
+        } else if (h != g_hookedModule || !HookBytesPointAtUs(h)) {
+            /* DllMain of a freshly mapped GameUI.dll may still be on the
+             * stack. Give it a moment; if the module vanished in that
+             * window, the next loop retries. */
+            Sleep(50);
+            if (GetModuleHandleA("GameUI.dll") == h) {
+                InstallOn(h);
+            }
+        }
+        Sleep(100);
+    }
 }
 
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD reason, LPVOID reserved)
@@ -115,41 +155,16 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD reason, LPVOID reserved)
     (void)reserved;
     switch (reason) {
     case DLL_PROCESS_ATTACH:
-        /* Deliberately do NOT LoadLibrary/hook here: DllMain for
-         * DLL_PROCESS_ATTACH runs under the loader lock, and calling
-         * LoadLibrary on a DLL with its own dependency chain from inside
-         * that lock is a well-known way to deadlock or crash. Defer all
-         * of that to the first real CreateInterface call instead, which
-         * happens once the engine is already fully initialized. */
         DisableThreadLibraryCalls(hinstDLL);
-        break;
-    case DLL_PROCESS_DETACH:
-        if (g_hOriginal != NULL) {
-            FreeLibrary(g_hOriginal);
+        {
+            HANDLE thread = CreateThread(NULL, 0, WatchGameUI, NULL, 0, NULL);
+            if (thread != NULL) {
+                CloseHandle(thread);
+            }
         }
         break;
     default:
         break;
     }
     return TRUE;
-}
-
-extern "C" __declspec(dllexport) void *CreateInterface(const char *pName, int *pReturnCode)
-{
-    HookLog("CreateInterface: called for '%s'", pName != NULL ? pName : "(null)");
-
-    if (g_hOriginal == NULL) {
-        LoadOriginalAndHook();
-    }
-
-    if (g_pOriginalCreateInterface == NULL) {
-        HookLog("CreateInterface: no original CreateInterface available, returning failure");
-        if (pReturnCode != NULL) {
-            *pReturnCode = 1;
-        }
-        return NULL;
-    }
-    void *result = g_pOriginalCreateInterface(pName, pReturnCode);
-    HookLog("CreateInterface: original returned %p", result);
-    return result;
 }

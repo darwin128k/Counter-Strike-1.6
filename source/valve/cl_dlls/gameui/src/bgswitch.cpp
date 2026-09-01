@@ -159,6 +159,11 @@ void BgSwitch_SetGameRoot(const char *gameRootDir)
     g_gameRootSet = 1;
 }
 
+void BgSwitch_Reset(void)
+{
+    g_ranOnce = 0;
+}
+
 void BgSwitch_RunOnceIfNeeded(void)
 {
     if (g_ranOnce || !g_gameRootSet) {

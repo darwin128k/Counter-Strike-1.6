@@ -32,6 +32,7 @@ static SetBoolFn g_SetFlag40 = NULL;
 static SetBoolFn g_SetFlag41 = NULL;
 static SetBoolFn g_SetFlag42 = NULL;
 static GetSchemeFn g_GetScheme = NULL;
+static volatile LONG g_disabledAfterCrash = 0;
 
 #define RVA_SETPOS     0x000436f0u
 #define RVA_SETSIZE    0x00043750u
@@ -85,6 +86,7 @@ static GetSchemeFn g_GetScheme = NULL;
 void LayoutHook_Init(HMODULE hOriginalGameUI)
 {
     BYTE *base = (BYTE *)hOriginalGameUI;
+    InterlockedExchange(&g_disabledAfterCrash, 0);
     g_SetPos = (SetPosFn)(base + RVA_SETPOS);
     g_SetSize = (SetSizeFn)(base + RVA_SETSIZE);
     g_GetSize = (GetSizeFn)(base + RVA_GETSIZE);
@@ -391,8 +393,6 @@ static void LayoutHook_Inner(void *thisPtr)
 
     HookLog("LayoutHook_ReplacementEntry: EXIT normally");
 }
-
-static volatile LONG g_disabledAfterCrash = 0;
 
 static int CrashFilter(unsigned int code, EXCEPTION_POINTERS *ep)
 {

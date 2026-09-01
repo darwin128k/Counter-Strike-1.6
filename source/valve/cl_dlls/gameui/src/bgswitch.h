@@ -3,9 +3,14 @@
 
 /* Stashes the game install root (the folder containing cstrike/, valve/,
  * hw.dll, etc -- no trailing slash) for BgSwitch_RunOnceIfNeeded() to use
- * later. Call this early (right after resolving it in LoadOriginalAndHook);
+ * later. Call this early (right after resolving it in GameUIHook_Install);
  * it does no file I/O by itself. */
 void BgSwitch_SetGameRoot(const char *gameRootDir);
+
+/* Allows BgSwitch_RunOnceIfNeeded to run again (video-mode relaunch
+ * loads a fresh GameUI in the same process; the new resolution needs a
+ * new background pick). */
+void BgSwitch_Reset(void);
 
 /* Rewrites cstrike/resource/BackgroundLayout.txt and
  * BackgroundLoadingLayout.txt to point at the right pre-baked tile set
