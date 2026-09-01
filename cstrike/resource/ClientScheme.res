@@ -217,6 +217,13 @@ Scheme
 	//////////////////////// FONTS /////////////////////////////
 	//
 	// describes all the fonts
+	CustomFontFiles
+	{
+		"1"		"resource/Inter-Regular.ttf"
+		"2"		"resource/Inter-Bold.ttf"
+		"3"		"resource/Inter-SemiBold.ttf"
+	}
+
 	Fonts
 	{
 		// fonts are used in order that they are listed
@@ -226,21 +233,24 @@ Scheme
 		{
 			"1"
 			{
-				"name"		"Verdana"
+				"name"		"Inter"
+				"custom"	"1"
 				"tall"		"12"
 				"weight"	"600"
 				"yres"	"480 599"
 			}
 			"2"
 			{
-				"name"		"Verdana"
+				"name"		"Inter"
+				"custom"	"1"
 				"tall"		"13"
 				"weight"	"600"
 				"yres"	"600 767"
 			}
 			"3"
 			{
-				"name"		"Verdana"
+				"name"		"Inter"
+				"custom"	"1"
 				"tall"		"14"
 				"weight"	"600"
 				"yres"	"768 1023"
@@ -248,7 +258,8 @@ Scheme
 			}
 			"4"
 			{
-				"name"		"Verdana"
+				"name"		"Inter"
+				"custom"	"1"
 				"tall"		"20"
 				"weight"	"600"
 				"yres"	"1024 1199"
@@ -256,7 +267,8 @@ Scheme
 			}
 			"5"
 			{
-				"name"		"Verdana"
+				"name"		"Inter"
+				"custom"	"1"
 				"tall"		"24"
 				"weight"	"600"
 				"yres"	"1200 6000"
@@ -267,7 +279,8 @@ Scheme
 		{
 			"1"
 			{
-				"name"		"Tahoma"
+				"name"		"Inter"
+				"custom"	"1"
 				"tall"		"12"
 				"weight"	"500"
 				"underline" "1"
@@ -277,21 +290,24 @@ Scheme
 		{
 			"1"
 			{
-				"name"		"Verdana"
+				"name"		"Inter"
+				"custom"	"1"
 				"tall"		"12"
 				"weight"	"0"
 				"yres"	"480 599"
 			}
 			"2"
 			{
-				"name"		"Verdana"
+				"name"		"Inter"
+				"custom"	"1"
 				"tall"		"13"
 				"weight"	"0"
 				"yres"	"600 767"
 			}
 			"3"
 			{
-				"name"		"Verdana"
+				"name"		"Inter"
+				"custom"	"1"
 				"tall"		"14"
 				"weight"	"0"
 				"yres"	"768 1023"
@@ -299,7 +315,8 @@ Scheme
 			}
 			"4"
 			{
-				"name"		"Verdana"
+				"name"		"Inter"
+				"custom"	"1"
 				"tall"		"20"
 				"weight"	"0"
 				"yres"	"1024 1199"
@@ -307,7 +324,8 @@ Scheme
 			}
 			"5"
 			{
-				"name"		"Verdana"
+				"name"		"Inter"
+				"custom"	"1"
 				"tall"		"24"
 				"weight"	"0"
 				"yres"	"1200 6000"
@@ -318,21 +336,24 @@ Scheme
 		{
 			"1"
 			{
-				"name"		"Verdana"
+				"name"		"Inter"
+				"custom"	"1"
 				"tall"		"12"
 				"weight"	"600"
 				"yres"	"480 599"
 			}
 			"2"
 			{
-				"name"		"Verdana"
+				"name"		"Inter"
+				"custom"	"1"
 				"tall"		"13"
 				"weight"	"600"
 				"yres"	"600 767"
 			}
 			"3"
 			{
-				"name"		"Verdana"
+				"name"		"Inter"
+				"custom"	"1"
 				"tall"		"14"
 				"weight"	"600"
 				"yres"	"768 1023"
@@ -340,7 +361,8 @@ Scheme
 			}
 			"4"
 			{
-				"name"		"Verdana"
+				"name"		"Inter"
+				"custom"	"1"
 				"tall"		"20"
 				"weight"	"600"
 				"yres"	"1024 1199"
@@ -348,7 +370,8 @@ Scheme
 			}
 			"5"
 			{
-				"name"		"Verdana"
+				"name"		"Inter"
+				"custom"	"1"
 				"tall"		"24"
 				"weight"	"600"
 				"yres"	"1200 6000"
@@ -360,7 +383,8 @@ Scheme
 		{
 			"1"
 			{
-				"name"		"Verdana"
+				"name"		"Inter"
+				"custom"	"1"
 				"tall"		"10"
 				"weight"	"0"
 				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
@@ -369,7 +393,8 @@ Scheme
 			}
 			"2"
 			{
-				"name"		"Verdana"
+				"name"		"Inter"
+				"custom"	"1"
 				"tall"		"12"
 				"weight"	"0"
 				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
@@ -378,7 +403,8 @@ Scheme
 			}
 			"3"
 			{
-				"name"		"Verdana"
+				"name"		"Inter"
+				"custom"	"1"
 				"tall"		"15"
 				"weight"	"0"
 				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
@@ -390,13 +416,15 @@ Scheme
 		{
 			"1"
 			{
-				"name"		"Verdana Bold"
+				"name"		"Inter Bold"
+				"custom"	"1"
 				"tall"		"18"
 				"weight"	"500"
 			}
 			"2"
 			{
-				"name"		"Arial"
+				"name"		"Inter"
+				"custom"	"1"
 				"tall"		"16"
 				"weight"	"600"
 			}
@@ -406,13 +434,15 @@ Scheme
 		{
 			"1"
 			{
-				"name"		"Tahoma"
+				"name"		"Inter"
+				"custom"	"1"
 				"tall"		"26"
 				"weight"	"800"
 			}
 			"2"
 			{
-				"name"		"Arial"
+				"name"		"Inter"
+				"custom"	"1"
 				"tall"		"26"
 				"weight"	"700"
 			}
@@ -421,13 +451,15 @@ Scheme
 		{
 			"1"
 			{
-				"name"		"Tahoma"
+				"name"		"Inter"
+				"custom"	"1"
 				"tall"		"24"
 				"weight"	"800"
 			}
 			"2"
 			{
-				"name"		"Arial"
+				"name"		"Inter"
+				"custom"	"1"
 				"tall"		"24"
 				"weight"	"700"
 			}
@@ -436,13 +468,15 @@ Scheme
 		{
 			"1"
 			{
-				"name"		"Tahoma"
+				"name"		"Inter"
+				"custom"	"1"
 				"tall"		"22"
 				"weight"	"800"
 			}
 			"2"
 			{
-				"name"		"Arial"
+				"name"		"Inter"
+				"custom"	"1"
 				"tall"		"22"
 				"weight"	"700"
 			}
@@ -451,13 +485,15 @@ Scheme
 		{
 			"1"
 			{
-				"name"		"Tahoma"
+				"name"		"Inter"
+				"custom"	"1"
 				"tall"		"20"
 				"weight"	"800"
 			}
 			"2"
 			{
-				"name"		"Arial"
+				"name"		"Inter"
+				"custom"	"1"
 				"tall"		"20"
 				"weight"	"700"
 			}
@@ -467,13 +503,15 @@ Scheme
 		{
 			"1"
 			{
-				"name"		"Verdana Bold"
+				"name"		"Inter Bold"
+				"custom"	"1"
 				"tall"		"14"
 				"weight"	"500"
 			}
 			"2"
 			{
-				"name"		"Arial"
+				"name"		"Inter"
+				"custom"	"1"
 				"tall"		"13"
 				"weight"	"600"
 			}

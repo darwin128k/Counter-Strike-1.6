@@ -180,6 +180,13 @@ Scheme
 	//////////////////////// FONTS /////////////////////////////
 	//
 	// describes all the fonts
+	CustomFontFiles
+	{
+		"1"		"resource/Inter-Regular.ttf"
+		"2"		"resource/Inter-Bold.ttf"
+		"3"		"resource/Inter-SemiBold.ttf"
+	}
+
 	Fonts
 	{
 		// fonts are used in order that they are listed
@@ -189,7 +196,8 @@ Scheme
 		{
 			"1"
 			{
-				"name"		"Tahoma"
+				"name"		"Inter"
+				"custom"	"1"
 				"tall"		"16"
 				"weight"	"500"
 			}
@@ -198,7 +206,8 @@ Scheme
 		{
 			"1"
 			{
-				"name"		"Tahoma"
+				"name"		"Inter"
+				"custom"	"1"
 				"tall"		"16"
 				"weight"	"1000"
 			}
@@ -207,7 +216,8 @@ Scheme
 		{
 			"1"
 			{
-				"name"		"Tahoma"
+				"name"		"Inter"
+				"custom"	"1"
 				"tall"		"16"
 				"weight"	"500"
 				"underline" "1"
@@ -217,7 +227,8 @@ Scheme
 		{
 			"1"
 			{
-				"name"		"Tahoma"
+				"name"		"Inter"
+				"custom"	"1"
 				"tall"		"13"
 				"weight"	"0"
 			}
@@ -226,7 +237,8 @@ Scheme
 		{
 			"1"
 			{
-				"name"		"Tahoma"
+				"name"		"Inter"
+				"custom"	"1"
 				"tall"		"12"
 				"weight"	"0"
 			}

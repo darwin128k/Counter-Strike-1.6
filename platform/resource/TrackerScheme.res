@@ -180,6 +180,13 @@ Scheme
 	//////////////////////// FONTS /////////////////////////////
 	//
 	// describes all the fonts
+	CustomFontFiles
+	{
+		"1"		"resource/Inter-Regular.ttf"
+		"2"		"resource/Inter-Bold.ttf"
+		"3"		"resource/Inter-SemiBold.ttf"
+	}
+
 	Fonts
 	{
 		// fonts are used in order that they are listed
@@ -189,7 +196,8 @@ Scheme
 		{
 			"1"
 			{
-				"name"		"Tahoma"
+				"name"		"Inter"
+				"custom"	"1"
 				"tall"		"16"
 				"weight"	"0"
 			}
@@ -198,7 +206,8 @@ Scheme
 		{
 			"1"
 			{
-				"name"		"Tahoma"
+				"name"		"Inter"
+				"custom"	"1"
 				"tall"		"16"
 				"weight"	"500"
 			}
@@ -207,7 +216,8 @@ Scheme
 		{
 			"1"
 			{
-				"name"		"Tahoma"
+				"name"		"Inter"
+				"custom"	"1"
 				"tall"		"16"
 				"weight"	"0"
 				"underline" "1"
@@ -217,7 +227,8 @@ Scheme
 		{
 			"1"
 			{
-				"name"		"Tahoma"
+				"name"		"Inter"
+				"custom"	"1"
 				"tall"		"13"
 				"weight"	"0"
 			}
@@ -226,7 +237,8 @@ Scheme
 		{
 			"1"
 			{
-				"name"		"Tahoma"
+				"name"		"Inter"
+				"custom"	"1"
 				"tall"		"12"
 				"weight"	"600"
 			}
@@ -235,7 +247,8 @@ Scheme
 		{
 			"1"
 			{
-				"name"		"Tahoma"
+				"name"		"Inter"
+				"custom"	"1"
 				"tall"		"12"
 				"weight"	"0"
 			}
@@ -244,20 +257,22 @@ Scheme
 		{
 			"1"
 			{
-				"name"		"Verdana"
+				"name"		"Inter"
+				"custom"	"1"
 				"tall"		"18"
 				"weight"	"1000"
-				"antialias" "0"
+				"antialias" "1"
 			}
 		}
 		"UiHeadline"
 		{
 			"1"
 			{
-				"name"		"Verdana"
+				"name"		"Inter"
+				"custom"	"1"
 				"tall"		"16"
 				"weight"	"1000"
-				"antialias" "0"
+				"antialias" "1"
 			}
 		}
 
@@ -277,7 +292,8 @@ Scheme
 		{
 			"1"
 			{
-				"name"		"Verdana"
+				"name"		"Inter"
+				"custom"	"1"
 				"tall"		"12"
 				"weight"	"600"
 				"yres"	"480 599"
@@ -285,7 +301,8 @@ Scheme
 			}
 			"2"
 			{
-				"name"		"Verdana"
+				"name"		"Inter"
+				"custom"	"1"
 				"tall"		"13"
 				"weight"	"600"
 				"yres"	"600 767"
@@ -293,7 +310,8 @@ Scheme
 			}
 			"3"
 			{
-				"name"		"Verdana"
+				"name"		"Inter"
+				"custom"	"1"
 				"tall"		"14"
 				"weight"	"600"
 				"yres"	"768 1023"
@@ -301,7 +319,8 @@ Scheme
 			}
 			"4"
 			{
-				"name"		"Verdana"
+				"name"		"Inter"
+				"custom"	"1"
 				"tall"		"20"
 				"weight"	"600"
 				"yres"	"1024 1199"
@@ -309,7 +328,8 @@ Scheme
 			}
 			"5"
 			{
-				"name"		"Verdana"
+				"name"		"Inter"
+				"custom"	"1"
 				"tall"		"24"
 				"weight"	"600"
 				"yres"	"1200 6000"
@@ -321,7 +341,8 @@ Scheme
 		{
 			"1"
 			{
-				"name"		"Trebuchet MS"
+				"name"		"Inter"
+				"custom"	"1"
 				"tall"		"18"
 				"weight"	"600"
 				"antialias"	"1"
@@ -332,7 +353,8 @@ Scheme
 		{
 			"1"
 			{
-				"name"		"Trebuchet MS"
+				"name"		"Inter"
+				"custom"	"1"
 				"tall"		"20"
 				"weight"	"700"
 				"antialias"	"1"
