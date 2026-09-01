@@ -22,21 +22,37 @@ typedef void(__thiscall *SetImageAtIndexFn)(void *item, int index, void *image, 
 typedef void(__thiscall *SetTextInsetFn)(void *item, int xInset, int yInset);
 typedef void(__thiscall *SetTextImageIndexFn)(void *item, int newIndex);
 typedef void(__thiscall *GetContentSizeFn)(void *item, int *outWide, int *outTall);
+typedef void(__thiscall *GetPosFn)(void *self, int *outX, int *outY);
+typedef void(__thiscall *PaintBgFn)(void *self);
+typedef void(__thiscall *IImageSetPosFn)(void *image, int x, int y);
+typedef void(__thiscall *IImageSetSizeFn)(void *image, int wide, int tall);
+typedef void(__thiscall *IImagePaintFn)(void *image);
 
 static SetPosFn g_SetPos = NULL;
 static SetSizeFn g_SetSize = NULL;
 static GetSizeFn g_GetSize = NULL;
+static GetPosFn g_GetPos = NULL;
 static SetColorFn g_SetBgColor = NULL;
 static SetIntFn g_SetBackgroundTypeCandidate = NULL;
 static SetBoolFn g_SetFlag40 = NULL;
 static SetBoolFn g_SetFlag41 = NULL;
 static SetBoolFn g_SetFlag42 = NULL;
 static GetSchemeFn g_GetScheme = NULL;
+static PaintBgFn g_origPaintBackground = NULL;
+static BYTE g_paintTrampoline[32];
 static volatile LONG g_disabledAfterCrash = 0;
+static volatile LONG g_paintDisabled = 0;
+
+#define MENU_ITEM_BG_PATH "gfx/vgui/menu_item_bg"
+
+static void InstallPaintBackgroundHook(BYTE *base);
 
 #define RVA_SETPOS     0x000436f0u
+#define RVA_GETPOS     0x00043720u /* Panel::GetPos(int&,int&); sits between SetPos and SetSize, same two-stack-arg thunk shape */
 #define RVA_SETSIZE    0x00043750u
 #define RVA_GETSIZE    0x00043780u /* Panel::GetSize(int&,int&); sits immediately after SetSize in Panel.cpp's own method order, confirmed by matching thiscall(this,int*,int*) shape */
+#define RVA_PAINTBACKGROUND 0x0006b5d0u /* vgui2::Menu::PaintBackground -- vtable slot immediately before Paint/PaintBorder/PaintBuildOverlay/PerformLayout */
+#define PAINTBG_STOLEN 6u /* 83 EC 08 56 8B F1 */
 #define RVA_SETBGCOLOR 0x0006bcc0u /* vgui2::Menu::SetBgColor, confirmed via "Menu/BgColor" xref in ApplySchemeSettings */
 #define RVA_SETBGTYPE_CANDIDATE 0x00046130u /* unconfirmed guess: setter/getter pair at offset 0x24, testing as PaintBackgroundType */
 #define RVA_SETFLAG40  0x000467f0u /* vtable idx 62, stores 1 byte at this+0x40 -- unconfirmed */
@@ -87,7 +103,9 @@ void LayoutHook_Init(HMODULE hOriginalGameUI)
 {
     BYTE *base = (BYTE *)hOriginalGameUI;
     InterlockedExchange(&g_disabledAfterCrash, 0);
+    InterlockedExchange(&g_paintDisabled, 0);
     g_SetPos = (SetPosFn)(base + RVA_SETPOS);
+    g_GetPos = (GetPosFn)(base + RVA_GETPOS);
     g_SetSize = (SetSizeFn)(base + RVA_SETSIZE);
     g_GetSize = (GetSizeFn)(base + RVA_GETSIZE);
     g_SetBgColor = (SetColorFn)(base + RVA_SETBGCOLOR);
@@ -96,9 +114,10 @@ void LayoutHook_Init(HMODULE hOriginalGameUI)
     g_SetFlag41 = (SetBoolFn)(base + RVA_SETFLAG41);
     g_SetFlag42 = (SetBoolFn)(base + RVA_SETFLAG42);
     g_GetScheme = (GetSchemeFn)(base + RVA_GETSCHEME);
-    HookLog("LayoutHook_Init: base=%p g_SetPos=%p g_SetSize=%p g_GetSize=%p g_SetBgColor=%p g_SetBackgroundTypeCandidate=%p flags=%p/%p/%p g_GetScheme=%p",
-            (void *)base, (void *)g_SetPos, (void *)g_SetSize, (void *)g_GetSize, (void *)g_SetBgColor, (void *)g_SetBackgroundTypeCandidate,
+    HookLog("LayoutHook_Init: base=%p g_SetPos=%p g_GetPos=%p g_SetSize=%p g_GetSize=%p g_SetBgColor=%p g_SetBackgroundTypeCandidate=%p flags=%p/%p/%p g_GetScheme=%p",
+            (void *)base, (void *)g_SetPos, (void *)g_GetPos, (void *)g_SetSize, (void *)g_GetSize, (void *)g_SetBgColor, (void *)g_SetBackgroundTypeCandidate,
             (void *)g_SetFlag40, (void *)g_SetFlag41, (void *)g_SetFlag42, (void *)g_GetScheme);
+    InstallPaintBackgroundHook(base);
 }
 
 static int ItemIsVisible(void *item)
@@ -164,6 +183,174 @@ static void AttachIcon(void *item, const char *iconPath)
     SetImageAtIndexFn setImg = (SetImageAtIndexFn)itemVtable[ITEM_VTABLE_SETIMAGEATINDEX_OFFSET / sizeof(void *)];
     setImg(item, 0, image, 4);
     HookLog("  AttachIcon: SetImageAtIndex done");
+}
+
+static int ItemIsVisibleQuiet(void *item)
+{
+    void **vtable;
+    IsVisibleFn fn;
+    if (item == NULL) {
+        return 0;
+    }
+    vtable = *(void ***)item;
+    fn = (IsVisibleFn)vtable[ITEM_VTABLE_IS_VISIBLE_OFFSET / sizeof(void *)];
+    return fn(item) != 0;
+}
+
+static int CollectVisibleItems(void *thisPtr, void **outItems, int maxItems)
+{
+    int *self = (int *)thisPtr;
+    int itemCount = self[OFF_ITEM_COUNT];
+    BYTE *itemSlotBase = (BYTE *)self[OFF_ITEM_PTR_BASE];
+    int *indexMap = (int *)self[OFF_ITEM_INDEX_MAP];
+    int visibleCount = 0;
+    int i;
+
+    if (itemCount <= 0 || itemCount > 64 || itemSlotBase == NULL || indexMap == NULL) {
+        return 0;
+    }
+
+    for (i = 0; i < itemCount && visibleCount < maxItems; i++) {
+        int slotIndex = indexMap[i];
+        void *item;
+        if (slotIndex < 0 || slotIndex >= itemCount) {
+            continue;
+        }
+        item = *(void **)(itemSlotBase + slotIndex * ITEM_SLOT_STRIDE);
+        if (item == NULL || !ItemIsVisibleQuiet(item)) {
+            continue;
+        }
+        outItems[visibleCount++] = item;
+    }
+    return visibleCount;
+}
+
+static int IsMainMenuPanel(void *thisPtr)
+{
+    const char *panelName = *(const char **)((char *)thisPtr + OFF_PANEL_NAME);
+    return panelName != NULL && strcmp(panelName, MAIN_MENU_PANEL_NAME) == 0;
+}
+
+static void DrawItemBackdrops(void *thisPtr)
+{
+    void *scheme;
+    void **schemeVtable;
+    SchemeGetImageFn getImage;
+    void *image;
+    void **imageVtable;
+    IImageSetPosFn setPos;
+    IImageSetSizeFn setSize;
+    IImagePaintFn paint;
+    void *visibleItems[64];
+    int visibleCount;
+    int i;
+
+    if (g_GetScheme == NULL || g_GetPos == NULL || g_GetSize == NULL) {
+        return;
+    }
+
+    scheme = g_GetScheme();
+    if (scheme == NULL) {
+        return;
+    }
+
+    schemeVtable = *(void ***)scheme;
+    getImage = (SchemeGetImageFn)schemeVtable[ITEM_VTABLE_SCHEME_GETIMAGE_OFFSET / sizeof(void *)];
+    image = getImage(scheme, MENU_ITEM_BG_PATH, 1);
+    if (image == NULL) {
+        return;
+    }
+
+    imageVtable = *(void ***)image;
+    paint = (IImagePaintFn)imageVtable[0];
+    setPos = (IImageSetPosFn)imageVtable[1];
+    setSize = (IImageSetSizeFn)imageVtable[4];
+
+    visibleCount = CollectVisibleItems(thisPtr, visibleItems, 64);
+    for (i = 0; i < visibleCount; i++) {
+        int x = 0, y = 0, w = 0, h = 0;
+        g_GetPos(visibleItems[i], &x, &y);
+        g_GetSize(visibleItems[i], &w, &h);
+        if (w <= 0 || h <= 0) {
+            continue;
+        }
+        setPos(image, x, y);
+        setSize(image, w, h);
+        paint(image);
+    }
+}
+
+static void __fastcall PaintBackground_Hook(void *thisPtr)
+{
+    if (InterlockedCompareExchange(&g_paintDisabled, 0, 0) != 0) {
+        if (g_origPaintBackground != NULL) {
+            g_origPaintBackground(thisPtr);
+        }
+        return;
+    }
+
+    if (!IsMainMenuPanel(thisPtr)) {
+        if (g_origPaintBackground != NULL) {
+            g_origPaintBackground(thisPtr);
+        }
+        return;
+    }
+
+    /* Skip the stock Menu fill so the CS background art shows between
+     * rows; draw a scheme TGA under each visible item (under icon+text,
+     * because children paint after this). */
+    __try {
+        DrawItemBackdrops(thisPtr);
+    } __except (EXCEPTION_EXECUTE_HANDLER) {
+        InterlockedExchange(&g_paintDisabled, 1);
+        HookLog("PaintBackground_Hook: exception drawing item backdrops, falling back to original");
+        if (g_origPaintBackground != NULL) {
+            g_origPaintBackground(thisPtr);
+        }
+    }
+}
+
+static void InstallPaintBackgroundHook(BYTE *base)
+{
+    static const BYTE kExpectedPrologue[6] = { 0x83, 0xEC, 0x08, 0x56, 0x8B, 0xF1 };
+    BYTE *target = base + RVA_PAINTBACKGROUND;
+    DWORD oldProtect;
+    INT32 relBack;
+    INT32 relHook;
+    DWORD trampProtect;
+
+    if (memcmp(target, kExpectedPrologue, PAINTBG_STOLEN) != 0) {
+        HookLog("InstallPaintBackgroundHook: prologue mismatch at %p (already hooked or wrong build), skip",
+                (void *)target);
+        return;
+    }
+
+    memcpy(g_paintTrampoline, target, PAINTBG_STOLEN);
+    g_paintTrampoline[PAINTBG_STOLEN] = 0xE9;
+    relBack = (INT32)((target + PAINTBG_STOLEN) - (g_paintTrampoline + PAINTBG_STOLEN + 5));
+    memcpy(g_paintTrampoline + PAINTBG_STOLEN + 1, &relBack, sizeof(relBack));
+
+    if (!VirtualProtect(g_paintTrampoline, sizeof(g_paintTrampoline), PAGE_EXECUTE_READWRITE, &trampProtect)) {
+        HookLog("InstallPaintBackgroundHook: trampoline VirtualProtect FAILED, GetLastError=%lu", GetLastError());
+        return;
+    }
+    g_origPaintBackground = (PaintBgFn)(void *)g_paintTrampoline;
+
+    if (!VirtualProtect(target, PAINTBG_STOLEN, PAGE_EXECUTE_READWRITE, &oldProtect)) {
+        HookLog("InstallPaintBackgroundHook: target VirtualProtect FAILED, GetLastError=%lu", GetLastError());
+        return;
+    }
+
+    relHook = (INT32)((BYTE *)PaintBackground_Hook - (target + 5));
+    target[0] = 0xE9;
+    memcpy(target + 1, &relHook, sizeof(relHook));
+    target[5] = 0x90;
+
+    VirtualProtect(target, PAINTBG_STOLEN, oldProtect, &oldProtect);
+    FlushInstructionCache(GetCurrentProcess(), target, PAINTBG_STOLEN);
+    FlushInstructionCache(GetCurrentProcess(), g_paintTrampoline, sizeof(g_paintTrampoline));
+    HookLog("InstallPaintBackgroundHook: hooked %p -> %p trampoline=%p",
+            (void *)target, (void *)PaintBackground_Hook, (void *)g_paintTrampoline);
 }
 
 static void LayoutHook_Inner(void *thisPtr)
@@ -357,14 +544,8 @@ static void LayoutHook_Inner(void *thisPtr)
     g_SetPos(thisPtr, 0, 40);
     HookLog("LayoutHook_ReplacementEntry: panel SetPos returned");
 
-    /* No backdrop this time -- plain list over the game background art,
-     * matching the vanilla look. */
-
-    /* Tried PaintBackgroundType=2 (no visible effect) and clearing flag
-     * 0x41 (turned out to gate background painting entirely, not just the
-     * border -- killed the backdrop). Neither got us rounded corners;
-     * leaving both calls out until we're ready to do the real texture-
-     * based approach. */
+    /* Per-row plate is drawn in Menu::PaintBackground from
+     * gfx/vgui/menu_item_bg (TGA next to the icons). */
 
     int y = startY;
     for (v = 0; v < visibleCount; v++) {

@@ -3,9 +3,9 @@
 
 #include <windows.h>
 
-/* Resolves GameUI.dll's SetPos/SetSize helpers relative to its loaded
- * base address. Must be called once, after GameUI.dll is mapped and
- * before installing the JMP at PerformLayout. */
+/* Resolves GameUI.dll helpers relative to its loaded base and installs
+ * the Menu::PaintBackground trampoline (row backdrop image). Must be
+ * called once after GameUI.dll is mapped, before the PerformLayout JMP. */
 void LayoutHook_Init(HMODULE hOriginalGameUI);
 
 /* Replacement for CGameMenu's internal layout routine (was FUN_1006afb0 at
