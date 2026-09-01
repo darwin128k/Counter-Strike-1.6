@@ -1,2 +1,4 @@
 *.log
 cstrike_downloads/
+cstrike/resource/BackgroundLayout.txt
+cstrike/resource/BackgroundLoadingLayout.txt
