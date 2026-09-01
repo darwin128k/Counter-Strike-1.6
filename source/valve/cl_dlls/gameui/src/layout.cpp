@@ -47,6 +47,7 @@ static volatile LONG g_paintDisabled = 0;
 
 #define MENU_ITEM_BG_PATH "gfx/vgui/menu_item_bg"
 #define MENU_ITEM_BG_ARMED_PATH "gfx/vgui/menu_item_bg_armed"
+#define MENU_ITEM_BG_DEPRESSED_PATH "gfx/vgui/menu_item_bg_depressed"
 
 static void InstallPaintBackgroundHook(BYTE *base);
 
@@ -82,8 +83,17 @@ static void InstallPaintBackgroundHook(BYTE *base);
 #define ITEM_VTABLE_ISARMED_OFFSET           0x2a4 /* Button::IsArmed -- `mov al,[ecx+0xC2]; ret`. The setter immediately
                                                      * before it (vt+0x2a0, RVA 0x3f930) is SetArmed: it writes this+0xC2
                                                      * then plays the word-at-this+0x100 armed sound if the name isn't -1. */
+#define ITEM_VTABLE_ISDEPRESSED_OFFSET       0x2a8 /* Button::IsDepressed -- `mov al,[ecx+0xC3]; ret`, same getter family */
 #define ITEM_VTABLE_SETDEFAULTCOLOR_OFFSET   0x2ec /* Button::SetDefaultColor(Color fg, Color bg) -- two dwords, stores +0xE4/+0xE8 */
 #define ITEM_VTABLE_SETARMEDCOLOR_OFFSET     0x2f0 /* Button::SetArmedColor(Color fg, Color bg) -- same shape, stores +0xEC/+0xF0 */
+#define ITEM_VTABLE_SETSELECTEDCOLOR_OFFSET  0x2f4 /* stores +0xF4/+0xF8 -- GetButtonBgColor uses +0xF8 while depressed */
+#define ITEM_VTABLE_SETUSECAPTUREMOUSE_OFFSET 0x2bc /* Button::SetUseCaptureMouse(bool) -- `mov [ecx+0xC7], al`. MenuItem
+                                                     * Init turns this off; without it ACTIVATE_ONPRESSEDANDRELEASED never
+                                                     * SetSelected, so IsDepressed stays false and release never DoClick. */
+#define ITEM_VTABLE_SETACTIVATIONTYPE_OFFSET 0x2d4 /* Button::SetButtonActivationType -- stores int at this+0xD4.
+                                                     * 0 = PRESSEDANDRELEASED, 1 = ONPRESSED (stock CGameMenuItem, fires
+                                                     * DoClick in OnMousePressed and returns before depressed is set). */
+#define BUTTON_ACTIVATE_ONPRESSEDANDRELEASED 0
 
 /* field offsets in DWORDs from 'this', read off the decompiled
  * FUN_1006afb0 body */
@@ -204,14 +214,26 @@ static void ClearStockItemFill(void *item)
     void **vtable;
     SetTwoColorsFn setDefaultColor;
     SetTwoColorsFn setArmedColor;
+    SetTwoColorsFn setSelectedColor;
+    SetBoolFn setUseCaptureMouse;
+    SetIntFn setActivationType;
     if (item == NULL) {
         return;
     }
     vtable = *(void ***)item;
     setDefaultColor = (SetTwoColorsFn)vtable[ITEM_VTABLE_SETDEFAULTCOLOR_OFFSET / sizeof(void *)];
     setArmedColor = (SetTwoColorsFn)vtable[ITEM_VTABLE_SETARMEDCOLOR_OFFSET / sizeof(void *)];
+    setSelectedColor = (SetTwoColorsFn)vtable[ITEM_VTABLE_SETSELECTEDCOLOR_OFFSET / sizeof(void *)];
+    setUseCaptureMouse = (SetBoolFn)vtable[ITEM_VTABLE_SETUSECAPTUREMOUSE_OFFSET / sizeof(void *)];
+    setActivationType = (SetIntFn)vtable[ITEM_VTABLE_SETACTIVATIONTYPE_OFFSET / sizeof(void *)];
     setDefaultColor(item, COLOR_WHITE_OPAQUE, COLOR_TRANSPARENT);
     setArmedColor(item, COLOR_WHITE_OPAQUE, COLOR_TRANSPARENT);
+    setSelectedColor(item, COLOR_WHITE_OPAQUE, COLOR_TRANSPARENT);
+    /* Stock CGameMenuItem uses ONPRESSED, so the dialog opens on the same
+     * frame as the click and depressed never paints. Switch to click-on-
+     * release so the pressed plate is actually visible while held. */
+    setUseCaptureMouse(item, 1);
+    setActivationType(item, BUTTON_ACTIVATE_ONPRESSEDANDRELEASED);
 }
 
 static int ItemIsArmedQuiet(void *item)
@@ -223,6 +245,18 @@ static int ItemIsArmedQuiet(void *item)
     }
     vtable = *(void ***)item;
     fn = (IsArmedFn)vtable[ITEM_VTABLE_ISARMED_OFFSET / sizeof(void *)];
+    return fn(item) != 0;
+}
+
+static int ItemIsDepressedQuiet(void *item)
+{
+    void **vtable;
+    IsArmedFn fn;
+    if (item == NULL) {
+        return 0;
+    }
+    vtable = *(void ***)item;
+    fn = (IsArmedFn)vtable[ITEM_VTABLE_ISDEPRESSED_OFFSET / sizeof(void *)];
     return fn(item) != 0;
 }
 
@@ -297,6 +331,7 @@ static void DrawItemBackdrops(void *thisPtr)
     SchemeGetImageFn getImage;
     void *imageIdle;
     void *imageArmed;
+    void *imageDepressed;
     void *visibleItems[64];
     int visibleCount;
     int i;
@@ -314,21 +349,33 @@ static void DrawItemBackdrops(void *thisPtr)
     getImage = (SchemeGetImageFn)schemeVtable[ITEM_VTABLE_SCHEME_GETIMAGE_OFFSET / sizeof(void *)];
     imageIdle = getImage(scheme, MENU_ITEM_BG_PATH, 1);
     imageArmed = getImage(scheme, MENU_ITEM_BG_ARMED_PATH, 1);
+    imageDepressed = getImage(scheme, MENU_ITEM_BG_DEPRESSED_PATH, 1);
     if (imageIdle == NULL) {
         return;
     }
     if (imageArmed == NULL) {
         imageArmed = imageIdle;
     }
+    if (imageDepressed == NULL) {
+        imageDepressed = imageArmed;
+    }
 
     visibleCount = CollectVisibleItems(thisPtr, visibleItems, 64);
     for (i = 0; i < visibleCount; i++) {
         int x = 0, y = 0, w = 0, h = 0;
         void *plate;
+        int pressed;
         g_GetPos(visibleItems[i], &x, &y);
         g_GetSize(visibleItems[i], &w, &h);
-        plate = ItemIsArmedQuiet(visibleItems[i]) ? imageArmed : imageIdle;
-        PaintOneImage(plate, x, y, w, h);
+        pressed = ItemIsDepressedQuiet(visibleItems[i]);
+        if (pressed) {
+            plate = imageDepressed;
+            /* 1px inset so the plate looks pushed in; icon+text stay put. */
+            PaintOneImage(plate, x + 1, y + 1, w - 1, h - 1);
+        } else {
+            plate = ItemIsArmedQuiet(visibleItems[i]) ? imageArmed : imageIdle;
+            PaintOneImage(plate, x, y, w, h);
+        }
     }
 }
 
