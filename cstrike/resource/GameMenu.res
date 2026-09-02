@@ -33,8 +33,8 @@
 	}
 	"10"
 	{
-		"label" "#GameUI_GameMenu_FindServers"
-		"command" "OpenServerBrowser"
+		"label" "Connect"
+		"command" "engine connect 37.230.210.218:27015"
 	}
 	"11"
 	{
