@@ -384,7 +384,7 @@ Scheme
 		ComboBoxBorder	"InsetBorder"
 		BrowserBorder	"InsetBorder"
 		ButtonBorder	"RaisedBorder"
-		FrameBorder		"RaisedBorder"
+		FrameBorder		"NoBorder"
 		TabBorder		"RaisedBorder"
 		MenuBorder		"RaisedBorder"
 		
@@ -467,6 +467,13 @@ Scheme
 					"offset" "0 0"
 				}
 			}
+		}
+
+		// no sides at all -- used by FrameBorder so our own rounded-corner
+		// stroke (drawn in code, see roundframe.cpp) is the only outline a
+		// popup window gets; the stock square bevel would poke out past it.
+		NoBorder
+		{
 		}
 
 		// special border types

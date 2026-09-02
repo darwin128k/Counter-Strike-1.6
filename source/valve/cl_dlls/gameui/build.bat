@@ -12,7 +12,7 @@ if errorlevel 1 (
 if not exist build mkdir build
 
 cl /nologo /LD /MT /W3 /O2 ^
-    src\main.cpp src\layout.cpp src\log.cpp src\bgswitch.cpp ^
+    src\main.cpp src\layout.cpp src\log.cpp src\bgswitch.cpp src\roundframe.cpp ^
     /Fo:build\ /Fe:build\vellum.dll ^
     /link /OUT:build\vellum.dll /EXPORT:Vellum_Init user32.lib advapi32.lib
 

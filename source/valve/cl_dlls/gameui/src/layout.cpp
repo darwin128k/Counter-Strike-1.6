@@ -1,6 +1,7 @@
 #include "layout.h"
 #include "log.h"
 #include "bgswitch.h"
+#include "roundframe.h"
 #include <math.h>
 #include <string.h>
 
@@ -150,6 +151,7 @@ void LayoutHook_Init(HMODULE hOriginalGameUI)
             (void *)g_SetFlag40, (void *)g_SetFlag41, (void *)g_SetFlag42, (void *)g_GetScheme);
     InstallPaintBackgroundHook(base);
     InstallBasePanelLayoutHook(base);
+    RoundFrame_Init(hOriginalGameUI);
 }
 
 static int ItemIsVisible(void *item)
