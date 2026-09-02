@@ -46,8 +46,11 @@ static PaintBgFn g_origPaintBackground = NULL;
 static BYTE g_paintTrampoline[32];
 static PerformLayoutFn g_origBasePanelLayout = NULL;
 static BYTE g_basePanelLayoutTrampoline[32];
+static PerformLayoutFn g_origPropSheetLayout = NULL;
+static BYTE g_propSheetLayoutTrampoline[32];
 static volatile LONG g_disabledAfterCrash = 0;
 static volatile LONG g_paintDisabled = 0;
+static volatile LONG g_propSheetLayoutDisabled = 0;
 
 #define MENU_ITEM_BG_PATH "gfx/vgui/menu_item_bg"
 #define MENU_ITEM_BG_ARMED_PATH "gfx/vgui/menu_item_bg_armed"
@@ -55,6 +58,7 @@ static volatile LONG g_paintDisabled = 0;
 
 static void InstallPaintBackgroundHook(BYTE *base);
 static void InstallBasePanelLayoutHook(BYTE *base);
+static void InstallPropertySheetLayoutHook(BYTE *base);
 
 #define RVA_SETPOS     0x000436f0u
 #define RVA_GETPOS     0x00043720u /* Panel::GetPos(int&,int&); sits between SetPos and SetSize, same two-stack-arg thunk shape */
@@ -69,6 +73,31 @@ static void InstallBasePanelLayoutHook(BYTE *base);
 #define RVA_SETFLAG42  0x00046810u /* vtable idx 64, stores 1 byte at this+0x42 -- unconfirmed */
 #define RVA_GETSCHEME  0x0003f030u /* returns IScheme*-like singleton; confirmed via icon-loading pattern in a Career-mode button ctor */
 #define RVA_BASEPANEL_PERFORMLAYOUT 0x0002bd10u /* CBasePanel vtable slot 111 (vt+0x1BC). Sets this to (0, screenH-64) size (screenW, 64) and lays out GameMenuButton inside that bottom strip. */
+#define RVA_PROPERTYSHEET_PERFORMLAYOUT 0x00078370u /* vgui2::PropertySheet::PerformLayout -- found via RTTI: the Complete Object
+                                                     * Locator for ".?AVPropertySheet@vgui2@@" leads to this vtable, whose
+                                                     * slot 111 (5 slots after PaintBackground, matching Panel.h's
+                                                     * PaintBackground/Paint/PaintBorder/PaintBuildOverlay/PostChildPaint/
+                                                     * PerformLayout declaration order) decompiles to exactly
+                                                     * PropertySheet::PerformLayout from the real vgui_controls source:
+                                                     * calls BaseClass::PerformLayout() first, then the default-28px
+                                                     * tabHeight branch, GetSize/SetBounds(xtab,2/4,width,tabHeight)
+                                                     * accumulation loop, and the this+0x94==_activeTab comparison. */
+#define PROPSHEET_LAYOUT_STOLEN 6u /* 83 EC 18 57 8B F9 */
+#define OFF_SHEET_PAGETAB_COUNT 0x84 /* m_PageTabs.Count(), read directly off the decompiled body above */
+#define OFF_SHEET_PAGETAB_ARRAY 0x8c /* m_PageTabs backing array -- plain PageTab* pointers, 4 bytes/slot (unlike
+                                      * CGameMenu's 12-byte item slots) */
+#define OFF_SHEET_ACTIVE_PAGE   0x90 /* _activePage (Panel*) */
+#define OFF_SHEET_ACTIVE_TAB    0x94 /* _activeTab (PageTab*), unused here but confirms the offset block */
+#define OFF_SHEET_SHOW_TABS     0xa0 /* _showTabs (bool) */
+#define OPTIONS_SHEET_PANEL_NAME "Sheet" /* vgui_controls::PropertyDialog's constructor always builds its child as
+                                          * new PropertySheet(this, "Sheet") -- confirmed by decompiling the function
+                                          * that references the "Sheet" string literal. That base ctor is shared by
+                                          * every PropertyDialog subclass in the process (Options, Multiplayer
+                                          * Advanced, Create Game...), so the name alone doesn't uniquely pick out
+                                          * the Options dialog. */
+#define OPTIONS_SHEET_TAB_COUNT 7 /* Multiplayer/Keyboard/Mouse/Audio/Video/Voice/Lock -- narrows the shared "Sheet"
+                                  * name down to specifically the Options dialog, same style of count-based guard
+                                  * as the visibleCount==4 check already used below for the main menu icons. */
 #define BANNER_Y 24 /* extra top inset so the CS logo isn't flush with the title bar */
 #define LOGO_MENU_GAP 16
 #define OFF_GAMEMENU_BUTTON   0xA8 /* CGameMenuButton*; stock PerformLayout SetPos/SetSize this */
@@ -151,6 +180,7 @@ void LayoutHook_Init(HMODULE hOriginalGameUI)
             (void *)g_SetFlag40, (void *)g_SetFlag41, (void *)g_SetFlag42, (void *)g_GetScheme);
     InstallPaintBackgroundHook(base);
     InstallBasePanelLayoutHook(base);
+    InstallPropertySheetLayoutHook(base);
     RoundFrame_Init(hOriginalGameUI);
 }
 
@@ -684,6 +714,146 @@ static void InstallBasePanelLayoutHook(BYTE *base)
     FlushInstructionCache(GetCurrentProcess(), g_basePanelLayoutTrampoline, sizeof(g_basePanelLayoutTrampoline));
     HookLog("InstallBasePanelLayoutHook: hooked %p -> %p",
             (void *)target, (void *)BasePanelLayout_Hook);
+}
+
+/* The Options dialog's tab strip (Multiplayer/Keyboard/Mouse/Audio/Video/
+ * Voice/Lock) is a stock vgui_controls::PropertySheet running its own
+ * unmodified PerformLayout -- we let that run first (it still auto-sizes
+ * every PageTab to its own label width and keeps the show/hide-tabs and
+ * active-page bookkeeping correct), then re-stack the same tab buttons
+ * into a left-anchored vertical column and shrink the active page into
+ * the remaining space on the right, instead of leaving them in the
+ * stock left-to-right row across the top. */
+static void __fastcall PropertySheetLayout_Hook(void *thisPtr)
+{
+    if (g_origPropSheetLayout != NULL) {
+        g_origPropSheetLayout(thisPtr);
+    }
+
+    if (InterlockedCompareExchange(&g_propSheetLayoutDisabled, 0, 0) != 0) {
+        return;
+    }
+
+    __try {
+        const char *panelName = *(const char **)((char *)thisPtr + OFF_PANEL_NAME);
+        char showTabs;
+        int count;
+        void **tabs;
+        int maxWide = 0;
+        int maxTall = 0;
+        int i;
+        const int marginX = 4;
+        const int startY = 4;
+        const int rowSpacing = 2;
+        const int contentGap = 6;
+        int columnWide;
+        int y;
+        void *activePage;
+
+        if (panelName == NULL || strcmp(panelName, OPTIONS_SHEET_PANEL_NAME) != 0) {
+            return;
+        }
+        if (g_SetPos == NULL || g_SetSize == NULL || g_GetSize == NULL) {
+            return;
+        }
+
+        showTabs = *(char *)((char *)thisPtr + OFF_SHEET_SHOW_TABS);
+        count = *(int *)((char *)thisPtr + OFF_SHEET_PAGETAB_COUNT);
+        if (!showTabs || count != OPTIONS_SHEET_TAB_COUNT) {
+            return;
+        }
+
+        tabs = *(void ***)((char *)thisPtr + OFF_SHEET_PAGETAB_ARRAY);
+        if (tabs == NULL) {
+            return;
+        }
+
+        /* The stock pass above already auto-sized every tab to its own
+         * (localization-aware) label width -- read that back instead of
+         * hardcoding pixel widths, same GetSize the original uses. */
+        for (i = 0; i < count; i++) {
+            void *tab = tabs[i];
+            int w = 0, h = 0;
+            if (tab == NULL) {
+                continue;
+            }
+            g_GetSize(tab, &w, &h);
+            if (w > maxWide) maxWide = w;
+            if (h > maxTall) maxTall = h;
+        }
+        if (maxWide <= 0 || maxTall <= 0) {
+            return;
+        }
+
+        columnWide = maxWide + 12;
+        y = startY;
+        for (i = 0; i < count; i++) {
+            void *tab = tabs[i];
+            if (tab == NULL) {
+                continue;
+            }
+            g_SetPos(tab, marginX, y);
+            g_SetSize(tab, columnWide, maxTall);
+            y += maxTall + rowSpacing;
+        }
+
+        activePage = *(void **)((char *)thisPtr + OFF_SHEET_ACTIVE_PAGE);
+        if (activePage != NULL) {
+            int wide = 0, tall = 0;
+            int contentX = marginX + columnWide + contentGap;
+            g_GetSize(thisPtr, &wide, &tall);
+            if (wide - contentX > 0) {
+                g_SetPos(activePage, contentX, 0);
+                g_SetSize(activePage, wide - contentX, tall);
+            }
+        }
+    } __except (EXCEPTION_EXECUTE_HANDLER) {
+        InterlockedExchange(&g_propSheetLayoutDisabled, 1);
+        HookLog("PropertySheetLayout_Hook: exception, disabling further attempts and leaving stock layout in place");
+    }
+}
+
+static void InstallPropertySheetLayoutHook(BYTE *base)
+{
+    static const BYTE kExpectedPrologue[6] = { 0x83, 0xEC, 0x18, 0x57, 0x8B, 0xF9 };
+    BYTE *target = base + RVA_PROPERTYSHEET_PERFORMLAYOUT;
+    DWORD oldProtect;
+    INT32 relBack;
+    INT32 relHook;
+    DWORD trampProtect;
+
+    if (memcmp(target, kExpectedPrologue, PROPSHEET_LAYOUT_STOLEN) != 0) {
+        HookLog("InstallPropertySheetLayoutHook: prologue mismatch at %p (already hooked or wrong build), skip",
+                (void *)target);
+        return;
+    }
+
+    memcpy(g_propSheetLayoutTrampoline, target, PROPSHEET_LAYOUT_STOLEN);
+    g_propSheetLayoutTrampoline[PROPSHEET_LAYOUT_STOLEN] = 0xE9;
+    relBack = (INT32)((target + PROPSHEET_LAYOUT_STOLEN) - (g_propSheetLayoutTrampoline + PROPSHEET_LAYOUT_STOLEN + 5));
+    memcpy(g_propSheetLayoutTrampoline + PROPSHEET_LAYOUT_STOLEN + 1, &relBack, sizeof(relBack));
+
+    if (!VirtualProtect(g_propSheetLayoutTrampoline, sizeof(g_propSheetLayoutTrampoline), PAGE_EXECUTE_READWRITE, &trampProtect)) {
+        HookLog("InstallPropertySheetLayoutHook: trampoline VirtualProtect FAILED, GetLastError=%lu", GetLastError());
+        return;
+    }
+    g_origPropSheetLayout = (PerformLayoutFn)(void *)g_propSheetLayoutTrampoline;
+
+    if (!VirtualProtect(target, PROPSHEET_LAYOUT_STOLEN, PAGE_EXECUTE_READWRITE, &oldProtect)) {
+        HookLog("InstallPropertySheetLayoutHook: target VirtualProtect FAILED, GetLastError=%lu", GetLastError());
+        return;
+    }
+
+    relHook = (INT32)((BYTE *)PropertySheetLayout_Hook - (target + 5));
+    target[0] = 0xE9;
+    memcpy(target + 1, &relHook, sizeof(relHook));
+    target[5] = 0x90;
+
+    VirtualProtect(target, PROPSHEET_LAYOUT_STOLEN, oldProtect, &oldProtect);
+    FlushInstructionCache(GetCurrentProcess(), target, PROPSHEET_LAYOUT_STOLEN);
+    FlushInstructionCache(GetCurrentProcess(), g_propSheetLayoutTrampoline, sizeof(g_propSheetLayoutTrampoline));
+    HookLog("InstallPropertySheetLayoutHook: hooked %p -> %p trampoline=%p",
+            (void *)target, (void *)PropertySheetLayout_Hook, (void *)g_propSheetLayoutTrampoline);
 }
 
 static void LayoutHook_Inner(void *thisPtr)
