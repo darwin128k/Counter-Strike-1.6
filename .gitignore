@@ -1,4 +1,5 @@
 *.log
+htmlcache/
 cstrike_downloads/
 valve_downloads/
 cstrike/resource/BackgroundLayout.txt
