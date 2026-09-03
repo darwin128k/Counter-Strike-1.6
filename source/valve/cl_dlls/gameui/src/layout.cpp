@@ -160,6 +160,53 @@ static void InstallPropertySheetLayoutHook(BYTE *base);
 #define OFF_PANEL_NAME 0x44
 #define MAIN_MENU_PANEL_NAME "GameMenu"
 
+/* COptionsDialog::COptionsDialog (RVA 0x377c0) -- found via RTTI/xref to the
+ * "OptionsDialog" panelName string literal it passes to PropertyDialog's
+ * base ctor. It hardcodes the dialog's default size via
+ * SetBounds(this, 0, 0, 0x200, 0x196) i.e. 512x406, decompiled+disassembled
+ * with Ghidra (project cs16_gameui). Real vgui_controls::PropertyDialog::
+ * PerformLayout (see public vgui_controls source) sizes the PropertySheet
+ * to the dialog's own client area and re-anchors OK/Cancel/Apply to the
+ * dialog's right edge every layout pass -- so growing the dialog here is
+ * sufficient; nothing else needs patching for those to follow along.
+ * That 512px width was already snug for the widest sub-page content
+ * (Multiplayer's Crosshair combo box + label reach x=462, only 50px of
+ * spare margin) even before the left-anchored tab column added by
+ * PropertySheetLayout_Hook eats another ~90-110px on the left -- hence the
+ * clipped "Crosshair appearance"/"Translucent" text once that hook shipped.
+ * Bumping the hardcoded width closes that gap; the two PUSH immediates for
+ * (tall, wide) sit back-to-back right after the base-ctor call, verified by
+ * byte match before patching, same as every other binary patch in this
+ * file. */
+#define RVA_OPTIONSDIALOG_WIDTH_PUSH 0x000377d7u /* PUSH 0x200 (wide); PUSH 0x196 (tall) is the instruction just before, at 0x377d2 -- args pushed right-to-left for SetBounds(this,x=0,y=0,wide,tall) */
+#define OPTIONSDIALOG_STOCK_WIDE 0x200u /* 512, matches the decompiled SetBounds call */
+#define OPTIONSDIALOG_NEW_WIDE   0x280u /* 640 -- +128px, enough to absorb the left tab column and keep the original ~50px margin the widest sub-page content needs */
+
+static void PatchOptionsDialogWidth(BYTE *base)
+{
+    static const BYTE kExpectedPush[5] = { 0x68, 0x00, 0x02, 0x00, 0x00 }; /* PUSH 0x200 */
+    BYTE *target = base + RVA_OPTIONSDIALOG_WIDTH_PUSH;
+    DWORD oldProtect;
+    DWORD newWide = OPTIONSDIALOG_NEW_WIDE;
+
+    if (memcmp(target, kExpectedPush, sizeof(kExpectedPush)) != 0) {
+        HookLog("PatchOptionsDialogWidth: prologue mismatch at %p (already patched or wrong build), skip",
+                (void *)target);
+        return;
+    }
+
+    if (!VirtualProtect(target, sizeof(kExpectedPush), PAGE_EXECUTE_READWRITE, &oldProtect)) {
+        HookLog("PatchOptionsDialogWidth: VirtualProtect FAILED, GetLastError=%lu", GetLastError());
+        return;
+    }
+
+    memcpy(target + 1, &newWide, sizeof(newWide));
+
+    VirtualProtect(target, sizeof(kExpectedPush), oldProtect, &oldProtect);
+    FlushInstructionCache(GetCurrentProcess(), target, sizeof(kExpectedPush));
+    HookLog("PatchOptionsDialogWidth: patched %p, wide %u -> %u", (void *)target, OPTIONSDIALOG_STOCK_WIDE, newWide);
+}
+
 void LayoutHook_Init(HMODULE hOriginalGameUI)
 {
     BYTE *base = (BYTE *)hOriginalGameUI;
@@ -181,6 +228,7 @@ void LayoutHook_Init(HMODULE hOriginalGameUI)
     InstallPaintBackgroundHook(base);
     InstallBasePanelLayoutHook(base);
     InstallPropertySheetLayoutHook(base);
+    PatchOptionsDialogWidth(base);
     RoundFrame_Init(hOriginalGameUI);
 }
 
