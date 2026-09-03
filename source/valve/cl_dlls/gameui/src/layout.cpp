@@ -51,6 +51,8 @@ static BYTE g_propSheetLayoutTrampoline[32];
 static volatile LONG g_disabledAfterCrash = 0;
 static volatile LONG g_paintDisabled = 0;
 static volatile LONG g_propSheetLayoutDisabled = 0;
+static int g_tabColumnMaxWide = 0; /* high-water mark across layout passes -- see PropertySheetLayout_Hook */
+static int g_tabColumnMaxTall = 0;
 
 #define MENU_ITEM_BG_PATH "gfx/vgui/menu_item_bg"
 #define MENU_ITEM_BG_ARMED_PATH "gfx/vgui/menu_item_bg_armed"
@@ -833,6 +835,25 @@ static void __fastcall PropertySheetLayout_Hook(void *thisPtr)
             return;
         }
 
+        /* This build's stock PropertySheet::PerformLayout doesn't refit
+         * each PageTab to its label on every pass -- it leaves tabs at
+         * whatever size they currently are. That means our own GetSize()
+         * read above sees back whatever WE set columnWide to on the
+         * previous call, not the tab's natural label width. Feeding that
+         * into "the new maxWide" made columnWide grow by +12 on literally
+         * every layout pass (confirmed via a debug dump: 84, 96, 108, 120,
+         * ... one +12 step per PerformLayout call, i.e. once per tab
+         * click), pushing the content area further right forever. Freeze
+         * the very first measurement instead -- that one still reflects
+         * each tab's real, untouched label width, since it's taken before
+         * this hook has ever resized anything -- and never recompute it. */
+        if (g_tabColumnMaxWide == 0) {
+            g_tabColumnMaxWide = maxWide;
+            g_tabColumnMaxTall = maxTall;
+        }
+        maxWide = g_tabColumnMaxWide;
+        maxTall = g_tabColumnMaxTall;
+
         columnWide = maxWide + 12;
         y = startY;
         for (i = 0; i < count; i++) {
@@ -860,6 +881,7 @@ static void __fastcall PropertySheetLayout_Hook(void *thisPtr)
             g_GetPos(activePage, &stockX, &stockY);
             g_GetSize(activePage, &stockWide, &stockTall);
             g_GetSize(thisPtr, &sheetWide, &sheetTall);
+
             if (sheetWide - contentX > 0 && stockTall > 0) {
                 g_SetPos(activePage, contentX, stockY);
                 g_SetSize(activePage, sheetWide - contentX, stockTall);
