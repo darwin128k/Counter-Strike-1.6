@@ -798,13 +798,23 @@ static void __fastcall PropertySheetLayout_Hook(void *thisPtr)
         }
 
         activePage = *(void **)((char *)thisPtr + OFF_SHEET_ACTIVE_PAGE);
-        if (activePage != NULL) {
-            int wide = 0, tall = 0;
+        if (activePage != NULL && g_GetPos != NULL) {
+            /* Reuse the stock pass's own Y/height for the active page --
+             * that's what already keeps it clear of the OK/Cancel/Apply row
+             * that PropertyDialog positions below the sheet. Overriding Y=0
+             * and height=Sheet's full GetSize() (the original approach here)
+             * stretched the page down over that button row. Only X/width
+             * need to change, to make room for the left-anchored tab column. */
+            int stockX = 0, stockY = 0;
+            int stockWide = 0, stockTall = 0;
+            int sheetWide = 0, sheetTall = 0;
             int contentX = marginX + columnWide + contentGap;
-            g_GetSize(thisPtr, &wide, &tall);
-            if (wide - contentX > 0) {
-                g_SetPos(activePage, contentX, 0);
-                g_SetSize(activePage, wide - contentX, tall);
+            g_GetPos(activePage, &stockX, &stockY);
+            g_GetSize(activePage, &stockWide, &stockTall);
+            g_GetSize(thisPtr, &sheetWide, &sheetTall);
+            if (sheetWide - contentX > 0 && stockTall > 0) {
+                g_SetPos(activePage, contentX, stockY);
+                g_SetSize(activePage, sheetWide - contentX, stockTall);
             }
         }
     } __except (EXCEPTION_EXECUTE_HANDLER) {
