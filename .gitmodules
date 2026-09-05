@@ -1,0 +1,6 @@
+[submodule "vellum/revloader"]
+	path = vellum/revloader
+	url = https://github.com/darwin128k/revloader.git
+[submodule "vellum/hl"]
+	path = vellum/hl
+	url = https://github.com/darwin128k/hl.git
