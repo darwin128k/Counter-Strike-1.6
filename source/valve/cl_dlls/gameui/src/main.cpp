@@ -7,11 +7,12 @@
 /* Sidecar DLL. It is NOT a GameUI.dll replacement -- the original
  * valve/cl_dlls/GameUI.dll stays byte-identical on disk.
  *
- * Loaded as a static import of steam_api.dll (already a non-Valve
- * RevEmu binary sitting next to hl.exe). A watcher thread keeps an eye
- * on GameUI.dll for the life of the process: GoldSrc's video-mode
- * change unloads and reloads GameUI (same process or a fresh one), and
- * a one-shot hook would leave the second instance vanilla. */
+ * Loaded by the GoldSrc launcher via -dll (rev.ini [Loader] Dlls=).
+ * Export Launcher_Init; Vellum_Init is kept as an alias. A watcher
+ * thread keeps an eye on GameUI.dll for the life of the process:
+ * GoldSrc's video-mode change unloads and reloads GameUI (same process
+ * or a fresh one), and a one-shot hook would leave the second instance
+ * vanilla. */
 
 #define HOOK_TARGET_RVA 0x0006afb0u
 #define HOOK_STUB_SIZE  5u /* E9 rel32 */
@@ -122,12 +123,17 @@ static void InstallOn(HMODULE hGameUI)
     }
 }
 
-extern "C" __declspec(dllexport) void Vellum_Init(void)
+extern "C" __declspec(dllexport) void Launcher_Init(void)
 {
     HMODULE hGameUI = GetModuleHandleA("GameUI.dll");
     if (hGameUI != NULL) {
         InstallOn(hGameUI);
     }
+}
+
+extern "C" __declspec(dllexport) void Vellum_Init(void)
+{
+    Launcher_Init();
 }
 
 static DWORD WINAPI WatchGameUI(LPVOID unused)

@@ -14,7 +14,7 @@ if not exist build mkdir build
 cl /nologo /LD /MT /W3 /O2 ^
     src\main.cpp src\layout.cpp src\log.cpp src\bgswitch.cpp src\roundframe.cpp ^
     /Fo:build\ /Fe:build\vellum.dll ^
-    /link /OUT:build\vellum.dll /EXPORT:Vellum_Init user32.lib advapi32.lib
+    /link /OUT:build\vellum.dll /EXPORT:Launcher_Init /EXPORT:Vellum_Init user32.lib advapi32.lib
 
 if errorlevel 1 (
     echo Build failed, not deploying.
@@ -51,11 +51,11 @@ if errorlevel 1 (
     exit /b 1
 )
 
-python patch_imports.py "%STEAM_ORIG%" "%STEAM_DST%" --dll vellum.dll --func Vellum_Init
+copy /Y "%STEAM_ORIG%" "%STEAM_DST%" >nul
 if errorlevel 1 (
-    echo PE patch of steam_api.dll failed.
+    echo Could not restore original steam_api.dll -- is the game running?
     exit /b 1
 )
 
-echo Build OK: original GameUI.dll restored, vellum.dll next to hl.exe, steam_api.dll imports it.
+echo Build OK: original GameUI.dll restored, vellum.dll next to hl.exe, stock steam_api.dll.
 endlocal
