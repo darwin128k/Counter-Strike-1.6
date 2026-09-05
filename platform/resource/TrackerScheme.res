@@ -30,7 +30,7 @@ Scheme
 		"ControlBG"			"28 28 30 242"
 		"ControlDarkBG"		"58 58 60 255"
 		"WindowBG"			"28 28 30 255"
-		"SelectionBG"		"10 132 255 120"
+		"SelectionBG"		"10 132 255 255"
 		"SelectionBG2"		"58 58 60 80"
 		"ListBG"			"28 28 30 255"
 
@@ -135,10 +135,10 @@ Scheme
 		"CheckBgColor"				"ListBG"
 
 		// buttons (default fg/bg colors are used if these are not set)
-//		"ButtonArmedFgColor"
-//		"ButtonArmedBgColor"
-//		"ButtonDepressedFgColor"	"BrightControlText"
-//		"ButtonDepressedBgColor"
+		"ButtonArmedFgColor"		"BrightBaseText"
+		"ButtonArmedBgColor"		"SelectionBG"
+		"ButtonDepressedFgColor"	"BrightBaseText"
+		"ButtonDepressedBgColor"	"SelectionBG"
 
 		// buddy buttons
 		BuddyButton
