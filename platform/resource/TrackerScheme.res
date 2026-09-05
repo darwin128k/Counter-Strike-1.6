@@ -392,7 +392,7 @@ Scheme
 		BrowserBorder	"InsetBorder"
 		ButtonBorder	"RaisedBorder"
 		FrameBorder		"NoBorder"
-		TabBorder		"RaisedBorder"
+		TabBorder		"NoBorder"
 		MenuBorder		"RaisedBorder"
 		
 		// standard borders
@@ -685,42 +685,6 @@ Scheme
 		
 		TabActiveBorder
 		{
-			"inset" "0 0 1 0"
-			Left
-			{
-				"1"
-				{
-					"color" "BorderBright"
-					"offset" "0 0"
-				}
-			}
-
-			Right
-			{
-				"1"
-				{
-					"color" "BorderDark"
-					"offset" "1 0"
-				}
-			}
-
-			Top
-			{
-				"1"
-				{
-					"color" "BorderBright"
-					"offset" "0 0"
-				}
-			}
-
-			Bottom
-			{
-				"1"
-				{
-					"color" "ControlBG"
-					"offset" "6 2"
-				}
-			}
 		}
 
 
