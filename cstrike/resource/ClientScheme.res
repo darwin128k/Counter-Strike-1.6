@@ -20,75 +20,65 @@ Scheme
 	//////////////////////// COLORS ///////////////////////////
 	Colors
 	{
-		// base colors — matte HUD/UI, same palette as the prefetch sheet
-		"BaseText"			"245 245 247 255"
-		"BrightBaseText"		"245 245 247 255"
-		"SelectedText"		"245 245 247 255"
-		"DimBaseText"		"152 152 157 255"
-		"LabelDimText"		"152 152 157 255"
-		"ControlText"		"245 245 247 255"
-		"BrightControlText"	"10 132 255 255"
-		"DisabledText1"		"88 88 92 255"
+		// In-game VGUI (MOTD, team/class, buy). GoldSrc client reads THIS
+		// file, not TrackerScheme. Keep CS 1.6 gold-on-transparent so
+		// labels stay visible on the white HTML briefing.
+		"BaseText"			"255 176 0 255"
+		"BrightBaseText"		"255 176 0 255"
+		"SelectedText"		"255 176 0 255"
+		"DimBaseText"		"255 176 0 255"
+		"LabelDimText"		"255 176 0 164"
+		"ControlText"		"255 176 0 255"
+		"BrightControlText"	"255 176 0 255"
+		"DisabledText1"		"80 48 0 255"
 		"DisabledText2"		"0 0 0 0"
-		"DimListText"		"152 152 157 255"
+		"DimListText"		"188 112 0 255"
 
-		"ButtonFocusBorder"	"58 58 60 255"
+		"ButtonFocusBorder"	"64 48 0 255"
 
-		// background colors
-		"ControlBG"			"28 28 30 242"
-		"ButtonBG"			"58 58 60 255"
-		"ControlDarkBG"		"58 58 60 255"
-		"WindowBG"			"28 28 30 255"
-		"SelectionBG"		"10 132 255 255"
-		"SelectionBG2"		"58 58 60 80"
-		"ListBG"			"28 28 30 255"
+		"ControlBG"			"0 0 0 0"
+		"ButtonBG"			"0 0 0 64"
+		"ControlDarkBG"		"0 0 0 128"
+		"WindowBG"			"0 0 0 200"
+		"SelectionBG"		"255 176 0 100"
+		"SelectionBG2"		"255 255 255 25"
+		"ListBG"			"0 0 0 128"
 		"ViewportBG"		"0 0 0 200"
-		"CareerBoxBG"		"28 28 30 242"
-		"Menu/BgColor"		"28 28 30 242"
+		"CareerBoxBG"		"0 0 0 227"
+		"Menu/BgColor"		"0 0 0 227"
 
-		// Credits ------------------------------------------------
 		"CreditsNormalFG"	"255 255 255 255"
 		"CreditsNormalBG"	"0 0 0 255"
+		"CreditsTitleFG"	"255 174 0 255"
+		"CreditsTitleBG"	"0 0 0 255"
+		"CreditsStudioTitleFG"	"255 174 0 255"
+		"CreditsStudioTitleBG"	"0 0 0 255"
+		"CreditsIndividualTitleFG"	"255 174 0 255"
+		"CreditsIndividualTitleBG"	"0 0 0 255"
 
-		"CreditsTitleFG"	"245 245 247 255"
-		"CreditsTitleBG"	"28 28 30 255"
-
-		"CreditsStudioTitleFG"	"245 245 247 255"
-		"CreditsStudioTitleBG"	"28 28 30 255"
-
-		"CreditsIndividualTitleFG"	"245 245 247 255"
-		"CreditsIndividualTitleBG"	"28 28 30 255"
-		// --------------------------------------------------------
-
-		// titlebar colors
-		"TitleText"			"245 245 247 255"
-		"TitleDimText"		"152 152 157 255"
+		"TitleText"			"255 174 0 255"
+		"TitleDimText"		"255 174 0 255"
 		"TitleBG"			"255 255 0 0"
 		"TitleDimBG"		"255 255 0 0"
-		"TitleIcon"		"245 245 247 255"
-		
-		// slider tick colors
+		"TitleIcon"		"255 174 0 255"
+
 		"SliderTickColor"		"127 140 127 255"
 		"SliderTrackColor"	"31 31 31 255"
 
-		// border colors
-		"BorderBright"		"58 58 60 255"
-		"BorderDark"		"58 58 60 255"
-		"BorderSelection"		"10 132 255 0"
-		"BorderBuyPreset"		"10 132 255 255"
+		"BorderBright"		"188 112 0 128"
+		"BorderDark"		"188 112 0 128"
+		"BorderSelection"		"188 112 0 0"
+		"BorderBuyPreset"		"255 176 0 255"
 
-		"team0"			"204 204 204 255" // Spectators
-		"team1"			"255 64 64 255" // CT's
-		"team2"			"153 204 255 255" // T's
+		"team0"			"204 204 204 255"
+		"team1"			"255 64 64 255"
+		"team2"			"153 204 255 255"
 
-		// Statistics text
 		"StatisticsText"		"255 255 255 255"
 		"SelectedStatisticsText"	"128 128 128 255"
-
 		"BuyPresetBG"			"0 0 0 64"
 		"BuyPresetAltBG"		"0 0 0 128"
-
-		"MapDescriptionText"	"245 245 247 255"
+		"MapDescriptionText"	"255 176 0 255"
 	}
 
 	///////////////////// BASE SETTINGS ////////////////////////
@@ -99,7 +89,7 @@ Scheme
 		"FgColor"			"ControlText"
 		"BgColor"			"ControlBG"
 		"ButtonBgColor"			"ButtonBG"
-		"LabelBgColor"		"0 0 0 0"
+		"LabelBgColor"		"ControlBG"
 		"SubPanelBgColor"	"ControlBG"
 
 		"DisabledFgColor1"		"DisabledText1" 
@@ -179,10 +169,10 @@ Scheme
 		"CheckBgColor"				"ListBG"
 
 		// buttons (default fg/bg colors are used if these are not set)
-		"ButtonArmedFgColor"		"BrightBaseText"
+//		"ButtonArmedFgColor"
 		"ButtonArmedBgColor"		"SelectionBG"
-		"ButtonDepressedFgColor"	"BrightBaseText"
-		"ButtonDepressedBgColor"	"SelectionBG"
+//		"ButtonDepressedFgColor"	"BrightControlText"
+//		"ButtonDepressedBgColor"
 
 		// buddy buttons
 		BuddyButton
@@ -839,42 +829,6 @@ Scheme
 
 		FrameBorder
 		{
-			"inset" "0 0 1 1"
-			Left
-			{
-				"1"
-				{
-					"color" "BorderBright"
-					"offset" "0 1"
-				}
-			}
-
-			Right
-			{
-				"1"
-				{
-					"color" "BorderBright"
-					"offset" "0 0"
-				}
-			}
-
-			Top
-			{
-				"1"
-				{
-					"color" "BorderBright"
-					"offset" "0 1"
-				}
-			}
-
-			Bottom
-			{
-				"1"
-				{
-					"color" "BorderBright"
-					"offset" "0 0"
-				}
-			}
 		}
 
 		TabBorder

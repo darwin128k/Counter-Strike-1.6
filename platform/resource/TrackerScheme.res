@@ -54,7 +54,7 @@ Scheme
 	{
 		"FgColor"			"ControlText"
 		"BgColor"			"ControlBG"
-		"LabelBgColor"		"0 0 0 0"
+		"LabelBgColor"		"WindowBG"
 		"SubPanelBgColor"	"ControlBG"
 
 		"DisabledFgColor1"		"DisabledText1" 
