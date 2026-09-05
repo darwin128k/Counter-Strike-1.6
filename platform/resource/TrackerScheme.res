@@ -68,8 +68,8 @@ Scheme
 		"TitleBarIcon"				"resource/icon_steam"
 		"TitleBarDisabledIcon"		"resource/icon_steam_disabled"
 
-		"TitleButtonFgColor"			"BorderBright"
-		"TitleButtonBgColor"			"ControlBG"
+		"TitleButtonFgColor"			"BrightBaseText"
+		"TitleButtonBgColor"			"TitleBG"
 		"TitleButtonDisabledFgColor"	"TitleDimText"
 		"TitleButtonDisabledBgColor"	"TitleDimBG"
 
@@ -486,121 +486,14 @@ Scheme
 		// special border types
 		TitleButtonBorder
 		{
-			"inset" "0 0 1 1"
-			Left
-			{
-				"1"
-				{
-					"color" "BorderBright"
-					"offset" "0 1"
-				}
-			}
-
-			Right
-			{
-				"1"
-				{
-					"color" "BorderDark"
-					"offset" "1 0"
-				}
-			}
-
-			Top
-			{
-				"4"
-				{
-					"color" "BorderBright"
-					"offset" "0 0"
-				}
-			}
-
-			Bottom
-			{
-				"1"
-				{
-					"color" "BorderDark"
-					"offset" "0 0"
-				}
-			}
 		}
 
 		TitleButtonDisabledBorder
 		{
-			"inset" "0 0 1 1"
-			Left
-			{
-				"1"
-				{
-					"color" "BgColor"
-					"offset" "0 1"
-				}
-			}
-
-			Right
-			{
-				"1"
-				{
-					"color" "BgColor"
-					"offset" "1 0"
-				}
-			}
-			Top
-			{
-				"1"
-				{
-					"color" "BgColor"
-					"offset" "0 0"
-				}
-			}
-
-			Bottom
-			{
-				"1"
-				{
-					"color" "BgColor"
-					"offset" "0 0"
-				}
-			}
 		}
 
 		TitleButtonDepressedBorder
 		{
-			"inset" "1 1 1 1"
-			Left
-			{
-				"1"
-				{
-					"color" "BorderDark"
-					"offset" "0 1"
-				}
-			}
-
-			Right
-			{
-				"1"
-				{
-					"color" "BorderBright"
-					"offset" "1 0"
-				}
-			}
-
-			Top
-			{
-				"1"
-				{
-					"color" "BorderDark"
-					"offset" "0 0"
-				}
-			}
-
-			Bottom
-			{
-				"1"
-				{
-					"color" "BorderBright"
-					"offset" "0 0"
-				}
-			}
 		}
 
 		ScrollBarButtonBorder
