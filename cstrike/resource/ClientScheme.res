@@ -237,6 +237,7 @@ Scheme
 				"tall"		"12"
 				"weight"	"600"
 				"yres"	"480 599"
+				"antialias"	"1"
 			}
 			"2"
 			{
@@ -245,6 +246,7 @@ Scheme
 				"tall"		"13"
 				"weight"	"600"
 				"yres"	"600 767"
+				"antialias"	"1"
 			}
 			"3"
 			{
@@ -283,6 +285,7 @@ Scheme
 				"tall"		"12"
 				"weight"	"500"
 				"underline" "1"
+				"antialias"	"1"
 			}
 		}
 		"DefaultSmall"
@@ -294,6 +297,7 @@ Scheme
 				"tall"		"12"
 				"weight"	"0"
 				"yres"	"480 599"
+				"antialias"	"1"
 			}
 			"2"
 			{
@@ -302,6 +306,7 @@ Scheme
 				"tall"		"13"
 				"weight"	"0"
 				"yres"	"600 767"
+				"antialias"	"1"
 			}
 			"3"
 			{
@@ -340,6 +345,7 @@ Scheme
 				"tall"		"12"
 				"weight"	"600"
 				"yres"	"480 599"
+				"antialias"	"1"
 			}
 			"2"
 			{
@@ -348,6 +354,7 @@ Scheme
 				"tall"		"13"
 				"weight"	"600"
 				"yres"	"600 767"
+				"antialias"	"1"
 			}
 			"3"
 			{
@@ -419,6 +426,7 @@ Scheme
 				"custom"	"1"
 				"tall"		"18"
 				"weight"	"500"
+				"antialias"	"1"
 			}
 			"2"
 			{
@@ -426,6 +434,7 @@ Scheme
 				"custom"	"1"
 				"tall"		"16"
 				"weight"	"600"
+				"antialias"	"1"
 			}
 		}
 		// Credits ------------------------------------------------
@@ -437,6 +446,7 @@ Scheme
 				"custom"	"1"
 				"tall"		"26"
 				"weight"	"800"
+				"antialias"	"1"
 			}
 			"2"
 			{
@@ -444,6 +454,7 @@ Scheme
 				"custom"	"1"
 				"tall"		"26"
 				"weight"	"700"
+				"antialias"	"1"
 			}
 		}
 		"CreditsStudioTitle"
@@ -454,6 +465,7 @@ Scheme
 				"custom"	"1"
 				"tall"		"24"
 				"weight"	"800"
+				"antialias"	"1"
 			}
 			"2"
 			{
@@ -461,6 +473,7 @@ Scheme
 				"custom"	"1"
 				"tall"		"24"
 				"weight"	"700"
+				"antialias"	"1"
 			}
 		}
 		"CreditsIndividualTitle"
@@ -471,6 +484,7 @@ Scheme
 				"custom"	"1"
 				"tall"		"22"
 				"weight"	"800"
+				"antialias"	"1"
 			}
 			"2"
 			{
@@ -478,6 +492,7 @@ Scheme
 				"custom"	"1"
 				"tall"		"22"
 				"weight"	"700"
+				"antialias"	"1"
 			}
 		}
 		"CreditsNormal"
@@ -488,6 +503,7 @@ Scheme
 				"custom"	"1"
 				"tall"		"20"
 				"weight"	"800"
+				"antialias"	"1"
 			}
 			"2"
 			{
@@ -495,6 +511,7 @@ Scheme
 				"custom"	"1"
 				"tall"		"20"
 				"weight"	"700"
+				"antialias"	"1"
 			}
 		}
 		// --------------------------------------------------------
@@ -506,6 +523,7 @@ Scheme
 				"custom"	"1"
 				"tall"		"14"
 				"weight"	"500"
+				"antialias"	"1"
 			}
 			"2"
 			{
@@ -513,6 +531,7 @@ Scheme
 				"custom"	"1"
 				"tall"		"13"
 				"weight"	"600"
+				"antialias"	"1"
 			}
 		}
 

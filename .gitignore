@@ -1,4 +1,5 @@
 *.log
+steam_appid.txt
 htmlcache/
 cstrike_downloads/
 valve_downloads/

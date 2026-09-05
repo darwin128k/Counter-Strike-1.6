@@ -196,6 +196,7 @@ Scheme
 				"custom"	"1"
 				"tall"		"16"
 				"weight"	"0"
+				"antialias"	"1"
 			}
 		}
 		"DefaultBold"
@@ -206,6 +207,7 @@ Scheme
 				"custom"	"1"
 				"tall"		"16"
 				"weight"	"500"
+				"antialias"	"1"
 			}
 		}
 		"DefaultUnderline"
@@ -217,6 +219,7 @@ Scheme
 				"tall"		"16"
 				"weight"	"0"
 				"underline" "1"
+				"antialias"	"1"
 			}
 		}
 		"DefaultSmall"
@@ -227,6 +230,7 @@ Scheme
 				"custom"	"1"
 				"tall"		"13"
 				"weight"	"0"
+				"antialias"	"1"
 			}
 		}
 		"DefaultSmallBold"
@@ -237,6 +241,7 @@ Scheme
 				"custom"	"1"
 				"tall"		"12"
 				"weight"	"600"
+				"antialias"	"1"
 			}
 		}
 		"DefaultVerySmall"
@@ -247,6 +252,7 @@ Scheme
 				"custom"	"1"
 				"tall"		"12"
 				"weight"	"0"
+				"antialias"	"1"
 			}
 		}
 		"MenuLarge"
@@ -294,6 +300,7 @@ Scheme
 				"weight"	"600"
 				"yres"	"480 599"
 				"dropshadow"	"1"
+				"antialias"	"1"
 			}
 			"2"
 			{
@@ -303,6 +310,7 @@ Scheme
 				"weight"	"600"
 				"yres"	"600 767"
 				"dropshadow"	"1"
+				"antialias"	"1"
 			}
 			"3"
 			{
@@ -312,6 +320,7 @@ Scheme
 				"weight"	"600"
 				"yres"	"768 1023"
 				"dropshadow"	"1"
+				"antialias"	"1"
 			}
 			"4"
 			{
@@ -321,6 +330,7 @@ Scheme
 				"weight"	"600"
 				"yres"	"1024 1199"
 				"dropshadow"	"1"
+				"antialias"	"1"
 			}
 			"5"
 			{
@@ -330,6 +340,7 @@ Scheme
 				"weight"	"600"
 				"yres"	"1200 6000"
 				"dropshadow"	"1"
+				"antialias"	"1"
 			}
 		}	
 		
