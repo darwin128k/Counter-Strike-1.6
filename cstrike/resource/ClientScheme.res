@@ -20,63 +20,62 @@ Scheme
 	//////////////////////// COLORS ///////////////////////////
 	Colors
 	{
-		// base colors
-		"BaseText"			"255 176 0 255"	// used in text windows, lists
-		"BrightBaseText"		"255 176 0 255"	// brightest text
-		"SelectedText"		"255 176 0 255"	// selected text
-		"DimBaseText"		"255 176 0 255"	// dim base text
-		"LabelDimText"		"255 176 0 164"	// used for info text
-		"ControlText"		"255 176 0 255"	// used in all text controls
-		"BrightControlText"	"255 176 0 255"	// use for selected controls
-		"DisabledText1"		"80 48 0 255"	// disabled text
-		"DisabledText2"		"0 0 0 0"		// overlay color for disabled text (to give that inset look)
-		"DimListText"		"188 112 0 255"	// offline friends, unsubscribed games, etc.
+		// base colors — matte HUD/UI, same palette as the prefetch sheet
+		"BaseText"			"245 245 247 255"
+		"BrightBaseText"		"245 245 247 255"
+		"SelectedText"		"245 245 247 255"
+		"DimBaseText"		"152 152 157 255"
+		"LabelDimText"		"152 152 157 255"
+		"ControlText"		"245 245 247 255"
+		"BrightControlText"	"10 132 255 255"
+		"DisabledText1"		"88 88 92 255"
+		"DisabledText2"		"0 0 0 0"
+		"DimListText"		"152 152 157 255"
 
-		"ButtonFocusBorder"	"64 48 0 255"	// keyboard focus dashed line for buttons
+		"ButtonFocusBorder"	"58 58 60 255"
 
 		// background colors
-		"ControlBG"			"0 0 0 0"		// background color of most controls
-		"ButtonBG"			"0 0 0 64"		// background color of buttons
-		"ControlDarkBG"		"0 0 0 128"		// darker background color; used for background of scrollbars
-		"WindowBG"			"0 0 0 200"		// background color of text edit panes (chat, text entries, etc.)
-		//"SelectionBG"		"192 28 0 140"	// background color of any selected text or menu item
-		"SelectionBG"		"255 176 0 100"	// background color of any selected text or menu item
-		"SelectionBG2"		"255 255 255 25"		// selection background in window w/o focus
-		"ListBG"			"0 0 0 128"		// background of scoreboard
+		"ControlBG"			"28 28 30 242"
+		"ButtonBG"			"58 58 60 255"
+		"ControlDarkBG"		"58 58 60 255"
+		"WindowBG"			"28 28 30 255"
+		"SelectionBG"		"10 132 255 120"
+		"SelectionBG2"		"58 58 60 80"
+		"ListBG"			"28 28 30 255"
 		"ViewportBG"		"0 0 0 200"
-		"CareerBoxBG"		"0 0 0 227"
-		"Menu/BgColor"		"0 0 0 227"
+		"CareerBoxBG"		"28 28 30 242"
+		"Menu/BgColor"		"28 28 30 242"
 
 		// Credits ------------------------------------------------
 		"CreditsNormalFG"	"255 255 255 255"
 		"CreditsNormalBG"	"0 0 0 255"
 
-		"CreditsTitleFG"	"255 174 0 255"
-		"CreditsTitleBG"	"0 0 0 255"
+		"CreditsTitleFG"	"245 245 247 255"
+		"CreditsTitleBG"	"28 28 30 255"
 
-		"CreditsStudioTitleFG"	"255 174 0 255"
-		"CreditsStudioTitleBG"	"0 0 0 255"
+		"CreditsStudioTitleFG"	"245 245 247 255"
+		"CreditsStudioTitleBG"	"28 28 30 255"
 
-		"CreditsIndividualTitleFG"	"255 174 0 255"
-		"CreditsIndividualTitleBG"	"0 0 0 255"
+		"CreditsIndividualTitleFG"	"245 245 247 255"
+		"CreditsIndividualTitleBG"	"28 28 30 255"
 		// --------------------------------------------------------
 
 		// titlebar colors
-		"TitleText"			"255 174 0 255"
-		"TitleDimText"		"255 174 0 255"
+		"TitleText"			"245 245 247 255"
+		"TitleDimText"		"152 152 157 255"
 		"TitleBG"			"255 255 0 0"
 		"TitleDimBG"		"255 255 0 0"
-		"TitleIcon"		"255 174 0 255" // big '!' icon in top left
+		"TitleIcon"		"245 245 247 255"
 		
 		// slider tick colors
 		"SliderTickColor"		"127 140 127 255"
 		"SliderTrackColor"	"31 31 31 255"
 
 		// border colors
-		"BorderBright"		"188 112 0 128"	// the lit side of a control
-		"BorderDark"		"188 112 0 128"	// the dark/unlit side of a control
-		"BorderSelection"		"188 112 0 0"	// the additional border color for displaying the default/selected button
-		"BorderBuyPreset"		"255 176 0 255"	// the lit side of a control
+		"BorderBright"		"58 58 60 255"
+		"BorderDark"		"58 58 60 255"
+		"BorderSelection"		"10 132 255 0"
+		"BorderBuyPreset"		"10 132 255 255"
 
 		"team0"			"204 204 204 255" // Spectators
 		"team1"			"255 64 64 255" // CT's
@@ -89,7 +88,7 @@ Scheme
 		"BuyPresetBG"			"0 0 0 64"
 		"BuyPresetAltBG"		"0 0 0 128"
 
-		"MapDescriptionText"	"255 176 0 255" // the text used in the map description window
+		"MapDescriptionText"	"245 245 247 255"
 	}
 
 	///////////////////// BASE SETTINGS ////////////////////////
@@ -862,7 +861,7 @@ Scheme
 			{
 				"1"
 				{
-					"color" "ControlBG"
+					"color" "BorderBright"
 					"offset" "0 1"
 				}
 			}
@@ -871,7 +870,7 @@ Scheme
 			{
 				"1"
 				{
-					"color" "ControlBG"
+					"color" "BorderBright"
 					"offset" "0 0"
 				}
 			}
@@ -880,7 +879,7 @@ Scheme
 			{
 				"1"
 				{
-					"color" "ControlBG"
+					"color" "BorderBright"
 					"offset" "0 1"
 				}
 			}
@@ -889,7 +888,7 @@ Scheme
 			{
 				"1"
 				{
-					"color" "ControlBG"
+					"color" "BorderBright"
 					"offset" "0 0"
 				}
 			}
