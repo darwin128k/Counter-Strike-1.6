@@ -795,42 +795,6 @@ Scheme
 		
 		ButtonBorder
 		{
-			"inset" "0 0 0 0"
-			Left
-			{
-				"1"
-				{
-					"color" "BorderBright"
-					"offset" "0 1"
-				}
-			}
-
-			Right
-			{
-				"1"
-				{
-					"color" "BorderDark"
-					"offset" "0 0"
-				}
-			}
-
-			Top
-			{
-				"1"
-				{
-					"color" "BorderBright"
-					"offset" "1 1"
-				}
-			}
-
-			Bottom
-			{
-				"1"
-				{
-					"color" "BorderDark"
-					"offset" "0 0"
-				}
-			}
 		}
 
 		BuyPresetBorder
@@ -965,82 +929,10 @@ Scheme
 		// this is the border used for default buttons (the button that gets pressed when you hit enter)
 		ButtonKeyFocusBorder
 		{
-			"inset" "0 0 0 0"
-			Left
-			{
-				"1"
-				{
-					"color" "BorderBright"
-					"offset" "0 1"
-				}
-			}
-
-			Right
-			{
-				"1"
-				{
-					"color" "BorderDark"
-					"offset" "0 0"
-				}
-			}
-
-			Top
-			{
-				"1"
-				{
-					"color" "BorderBright"
-					"offset" "1 1"
-				}
-			}
-
-			Bottom
-			{
-				"1"
-				{
-					"color" "BorderDark"
-					"offset" "0 0"
-				}
-			}
 		}
 
 		ButtonDepressedBorder
 		{
-			"inset" "0 0 0 0"
-			Left
-			{
-				"1"
-				{
-					"color" "BorderBright"
-					"offset" "0 1"
-				}
-			}
-
-			Right
-			{
-				"1"
-				{
-					"color" "BorderDark"
-					"offset" "0 0"
-				}
-			}
-
-			Top
-			{
-				"1"
-				{
-					"color" "BorderBright"
-					"offset" "1 1"
-				}
-			}
-
-			Bottom
-			{
-				"1"
-				{
-					"color" "BorderDark"
-					"offset" "0 0"
-				}
-			}
 		}
 
 		ComboBoxBorder

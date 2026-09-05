@@ -390,7 +390,7 @@ Scheme
 		BaseBorder		"InsetBorder"
 		ComboBoxBorder	"InsetBorder"
 		BrowserBorder	"InsetBorder"
-		ButtonBorder	"RaisedBorder"
+		ButtonBorder	"NoBorder"
 		FrameBorder		"NoBorder"
 		TabBorder		"NoBorder"
 		MenuBorder		"RaisedBorder"
@@ -728,102 +728,12 @@ Scheme
 			}
 		}
 
-		// this is the border used for default buttons (the button that gets pressed when you hit enter)
 		ButtonKeyFocusBorder
 		{
-			"inset" "0 0 1 1"
-			Left
-			{
-				"1"
-				{
-					"color" "BorderSelection"
-					"offset" "0 0"
-				}
-				"2"
-				{
-					"color" "BorderBright"
-					"offset" "0 1"
-				}
-			}
-			Top
-			{
-				"1"
-				{
-					"color" "BorderSelection"
-					"offset" "0 0"
-				}
-				"2"
-				{
-					"color" "BorderBright"
-					"offset" "1 0"
-				}
-			}
-			Right
-			{
-				"1"
-				{
-					"color" "BorderSelection"
-					"offset" "0 0"
-				}
-				"2"
-				{
-					"color" "BorderDark"
-					"offset" "1 0"
-				}
-			}
-			Bottom
-			{
-				"1"
-				{
-					"color" "BorderSelection"
-					"offset" "0 0"
-				}
-				"2"
-				{
-					"color" "BorderDark"
-					"offset" "1 1"
-				}
-			}
 		}
 
 		ButtonDepressedBorder
 		{
-			"inset" "2 1 1 1"
-			Left
-			{
-				"1"
-				{
-					"color" "BorderDark"
-					"offset" "0 1"
-				}
-			}
-
-			Right
-			{
-				"1"
-				{
-					"color" "BorderBright"
-					"offset" "1 0"
-				}
-			}
-
-			Top
-			{
-				"1"
-				{
-					"color" "BorderDark"
-					"offset" "0 0"
-				}
-			}
-
-			Bottom
-			{
-				"1"
-				{
-					"color" "BorderBright"
-					"offset" "0 0"
-				}
-			}
 		}
 	}
 }
