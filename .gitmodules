@@ -4,3 +4,6 @@
 [submodule "vellum/hl"]
 	path = vellum/hl
 	url = https://github.com/darwin128k/hl.git
+[submodule "vellum/leaflet"]
+	path = vellum/leaflet
+	url = https://github.com/darwin128k/leaflet.git
